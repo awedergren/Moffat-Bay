@@ -1,0 +1,187 @@
+:root {
+  --navy: #1F2F45;
+  --cream: #F2E6C9;
+  --white: #ffffff;
+  --blue: #3F87A6;
+  --gold: #F4C26B;
+  --gray: #D8DEE4;
+}
+
+/* RESET */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--navy);
+  background: #fff;
+}
+
+.container {
+  width: 1100px;
+  max-width: 92%;
+  margin: auto;
+}
+
+/* ================= HEADER ================= */
+.site-header {
+  background: #fff;
+  border-bottom: 1px solid var(--gray);
+}
+
+.nav-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.nav a {
+  margin-left: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  color: #334155;
+}
+
+/* ================= HERO ================= */
+.hero {
+  position: relative;
+  height: 520px;
+  display: flex;
+  /* Use explicit path so the correct image is always loaded. */
+  background-image: url('/Module6/Marina.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--navy);
+  /* Prefer the project-provided marina image; fall back to Images/hero.png */
+  background-image: url("Marina.png");
+  background-image: url("Images/hero.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.hero h1 {
+  font-size: 52px;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 18px;
+  margin-bottom: 25px;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  margin: 0 6px;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: #111;
+}
+
+.btn-outline {
+  border: 2px solid white;
+  color: white;
+}
+
+.btn-secondary {
+  background: var(--blue);
+  color: white;
+}
+
+.btn-outline-dark {
+  border: 2px solid var(--blue);
+  color: var(--blue);
+}
+
+/* ================= FEATURES ================= */
+.features {
+  padding: 50px 0;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+/* ================= CTA ================= */
+.cta {
+  background: var(--navy);
+  color: white;
+  text-align: center;
+  padding: 70px 20px;
+}
+
+.cta h2 {
+  color: var(--cream);
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+/* ================= HELP ================= */
+.help {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.site-footer {
+  text-align: center;
+  padding: 16px;
+  border-top: 1px solid var(--gray);
+}
+
+
+/* Add space between text and buttons */
+.cta p {
+  margin-bottom: 32px;
+}
+
+.help p {
+  margin-bottom: 28px;
+}
+
