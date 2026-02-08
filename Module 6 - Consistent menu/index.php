@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <?php
 session_start();
+require_once __DIR__ . '/db.php';
 $loggedIn = isset($_SESSION['username']);
 ?>
 <html lang="en">
@@ -9,8 +10,8 @@ $loggedIn = isset($_SESSION['username']);
   <title>Moffat Bay Island Marina</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- IMPORTANT: correct path -->
-    <link rel="stylesheet" href="styles.css?v=1">
+  <!-- IMPORTANT: root-relative stylesheet -->
+    <link rel="stylesheet" href="/styles.css?v=1">
 </head>
 <body>
 
@@ -32,7 +33,7 @@ $loggedIn = isset($_SESSION['username']);
         </div>
         <div class="nav-right">
           <?php if ($loggedIn): ?>
-            <a href="account.php">My Account</a>
+            <a href="MyAccount.php">My Account</a>
             <a href="logout.php" class="btn ghost">Log out</a>
           <?php else: ?>
             <a href="BlueTeam_LoginPage.php">Login/Register</a>
@@ -100,7 +101,7 @@ $loggedIn = isset($_SESSION['username']);
 <section class="help">
   <h3>Questions? We're Here to Help</h3>
   <p>Our team is ready to assist with your reservation needs</p>
-  <a class="btn btn-outline-dark" href="#">Contact Us</a>
+  <a class="btn btn-outline-dark contact-outline-index" href="#">Contact Us</a>
 </section>
 
 <!-- ================= FOOTER ================= -->
@@ -108,6 +109,7 @@ $loggedIn = isset($_SESSION['username']);
   <p>&copy; 2026 Moffat Bay Island Marina</p>
 </footer>
 
-<script src="LandingPage/script.js"></script>
+</body>
+</html>
 </body>
 </html>

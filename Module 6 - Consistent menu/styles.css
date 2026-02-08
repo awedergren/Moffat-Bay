@@ -1,3 +1,47 @@
+:root{
+  --navy: #1F2F45;
+  --cream: #F2E6C9;
+  --boat-white: #F8F9FA;
+  --ocean: #3F87A6;
+  --pine: #2F5D4A;
+  --gold: #F4C26B;
+  --coral: #E8896B;
+  --gray: #D8DEE4;
+  --max-width: 1100px;
+}
+
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--boat-white); color:var(--navy);font-size:16px}
+
+/* Top navigation */
+.topbar{background:var(--boat-white);border-bottom:1px solid var(--gray)}
+.container{max-width:var(--max-width);margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center}
+.logo-link img{height:56px;width:56px;object-fit:cover;border-radius:50%}
+nav{display:flex;align-items:center}
+nav a{color:var(--navy);text-decoration:none;font-size:14px}
+nav .nav-left{display:flex;gap:18px}
+nav .nav-right{margin-left:auto;display:flex;gap:18px;align-items:center}
+
+/* Hero and notice bar */
+.hero{height:320px;background:linear-gradient(135deg,var(--navy) 10%, rgba(47,93,74,0.85) 100%);display:flex;align-items:center;justify-content:center;color:var(--boat-white);position:relative;padding:28px 0 20px}
+.hero .hero-inner{max-width:var(--max-width);text-align:center}
+.hero .icon{width:88px;height:88px;border-radius:50%;background:var(--ocean);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 6px 18px rgba(31,47,69,0.25)}
+.hero h1{margin:0;font-size:48px;font-weight:700;line-height:1.05}
+.hero p{margin:10px 0 0;font-size:18px;color:rgba(248,249,250,0.95)}
+
+.notice-wrap{display:flex;justify-content:center;margin-top:18px;position:relative;z-index:2;padding:0 26px}
+.notice{background:var(--ocean);color:var(--boat-white);padding:14px 26px;border-radius:8px;width:100%;box-sizing:border-box;text-align:center;font-size:15px;box-shadow:0 6px 18px rgba(31,47,69,0.08);position:relative}
+
+/* Responsive */
+@media (max-width:900px){
+  .card-grid{flex-direction:column}
+  .card-right{width:100%}
+  .logo-link img{height:44px;width:44px}
+}
+
+/* Utility */
+.btn{font-weight:700;border-radius:8px;padding:10px 16px;cursor:pointer;border:1px solid transparent}
 :root {
   --navy: #1F2F45;
   --cream: #F2E6C9;
@@ -51,8 +95,8 @@ header.topbar.site-header{padding:0}
   position: relative;
   height: 520px;
   display: flex;
-  /* Use explicit path so the correct image is always loaded. */
-  background-image: url('/Module6/Marina.png');
+  /* Use multiple fallbacks for the hero background so the image loads from several common locations. */
+  background-image: url('marina.png'), url('Images/hero.png'), url('/marina.png');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -64,8 +108,7 @@ header.topbar.site-header{padding:0}
   inset: 0;
   background: var(--navy);
   /* Prefer the project-provided marina image; fall back to Images/hero.png */
-  background-image: url("Marina.png");
-  background-image: url("Images/hero.png");
+  background-image: url('marina.png'), url('Images/hero.png');
   background-size: cover;
   background-position: center;
 }
@@ -80,6 +123,11 @@ header.topbar.site-header{padding:0}
 .hero-content {
   position: relative;
   z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .hero h1 {
@@ -90,6 +138,13 @@ header.topbar.site-header{padding:0}
 .hero p {
   font-size: 18px;
   margin-bottom: 25px;
+}
+
+.hero-actions{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  margin-top:12px;
 }
 
 /* ================= BUTTONS ================= */
@@ -113,6 +168,20 @@ header.topbar.site-header{padding:0}
   color: white;
 }
 
+/* Ensure the hero's outline button always displays a clear themed border
+   and matches the site's color scheme regardless of cascade order. */
+.hero .btn-outline,
+.hero-actions .btn-outline{
+  border: 2px solid var(--boat-white);
+  color: var(--boat-white); /* keep text white */
+  background: transparent;
+  box-shadow: none;
+}
+.hero .btn-outline:hover,
+.hero-actions .btn-outline:hover{
+  background: rgba(244,194,107,0.08); /* subtle gold hover */
+}
+
 .btn-secondary {
   background: var(--blue);
   color: white;
@@ -121,6 +190,21 @@ header.topbar.site-header{padding:0}
 .btn-outline-dark {
   border: 2px solid var(--blue);
   color: var(--blue);
+}
+
+/* Index-only: make the bottom Contact Us button stand out with the site's ocean blue */
+.btn.contact-outline-index {
+  border: 2px solid var(--ocean) !important;
+  color: var(--ocean) !important;
+  background: transparent !important;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn.contact-outline-index:hover {
+  background: rgba(63,135,166,0.06);
 }
 
 /* BlueTeam button variants (ensure 'btn ghost' etc match canonical page) */

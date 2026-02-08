@@ -33,6 +33,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password  = $_POST['password'];
     $confirm   = $_POST['confirm_password'];
 
+    // normalize phone for storage as XXX-XXX-XXXX when possible
+    $digits = preg_replace('/\D+/', '', $phone);
+    if (strlen($digits) === 11 && $digits[0] === '1') $digits = substr($digits, 1);
+    if (strlen($digits) === 10) {
+      $phone_db = sprintf('%s-%s-%s', substr($digits,0,3), substr($digits,3,3), substr($digits,6,4));
+    } else {
+      $phone_db = $phone; // store as-entered when we can't normalize
+    }
+
 // Password match check
     if ($password !== $confirm) {
         $error = "Passwords do not match.";
@@ -48,12 +57,12 @@ try {
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        ':email'      => $email,
-        ':password'   => $hashedPassword,
-        ':first_name' => $firstName,
-        ':last_name'  => $lastName,
-        ':phone'      => $phone
-    ]);
+    ':email'      => $email,
+    ':password'   => $hashedPassword,
+    ':first_name' => $firstName,
+    ':last_name'  => $lastName,
+    ':phone'      => $phone_db
+  ]);
 
     $success = "Account created successfully! Redirecting to login...";
     header("Refresh: 2; URL=BlueTeam_LoginPage.php");
@@ -90,7 +99,7 @@ try {
         </div>
         <div class="nav-right">
           <?php if ($loggedIn): ?>
-            <a href="account.php">My Account</a>
+            <a href="MyAccount.php">My Account</a>
             <a href="logout.php" class="btn ghost">Log out</a>
           <?php else: ?>
             <a href="BlueTeam_LoginPage.php">Login/Register</a>
@@ -132,7 +141,7 @@ try {
 
       <div class="form-group">
         <label>Phone Number</label>
-        <input type="text" name="phone">
+        <input type="tel" id="reg_phone" name="phone" inputmode="tel" placeholder="e.g. 555-555-5555">
       </div>
 
       <div class="form-group">
@@ -177,5 +186,25 @@ try {
   </aside>
 
 </main>
+
+<script>
+// Auto-format phone input as XXX-XXX-XXXX while typing
+(function(){
+  var el = document.getElementById('reg_phone');
+  if (!el) return;
+  el.addEventListener('input', function(e){
+    var v = this.value.replace(/\D/g,'').slice(0,10);
+    if (v.length > 6) this.value = v.slice(0,3) + '-' + v.slice(3,6) + '-' + v.slice(6);
+    else if (v.length > 3) this.value = v.slice(0,3) + '-' + v.slice(3);
+    else this.value = v;
+  });
+  // optional: format on blur to ensure stored format
+  el.addEventListener('blur', function(){
+    var v = this.value.replace(/\D/g,'');
+    if (v.length === 11 && v[0] === '1') v = v.slice(1);
+    if (v.length === 10) this.value = v.slice(0,3) + '-' + v.slice(3,6) + '-' + v.slice(6);
+  });
+})();
+</script>
 
 </body>

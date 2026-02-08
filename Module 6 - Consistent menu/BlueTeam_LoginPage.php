@@ -1,5 +1,7 @@
 <?php
 session_start();
+// Track login state to avoid undefined-variable notices in templates
+$loggedIn = isset($_SESSION['username']) || isset($_SESSION['user_id']);
 
 // Load database connection from project config so `$pdo` is available.
 // Try several sensible locations so the page works when served from htdocs
@@ -14,8 +16,20 @@ $dbIncluded = false;
 foreach ($dbPaths as $dbPath) {
   if (file_exists($dbPath)) {
     require_once $dbPath;
-    $dbIncluded = true;
-    .hero{
+      $dbIncluded = true;
+      break;
+    }
+    }
+  ?>
+  <!doctype html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Moffat Bay</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+  .hero{
       height:240px; /* reference height */
       display:flex;
       align-items:center;
@@ -28,6 +42,7 @@ foreach ($dbPaths as $dbPath) {
     }
     .hero .hero-inner{max-width:var(--max-width);text-align:center;padding:8px 0}
     .hero .icon{width:64px;height:64px;border-radius:50%;background:var(--ocean);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 6px 18px rgba(31,47,69,0.25)}
+    .icon svg{width:60%;height:60%;fill:currentColor;display:block}
     .hero h1{font-size:40px;margin:0;font-weight:700;line-height:1.02}
     .hero p{margin:8px 0 0;font-size:16px;color:rgba(248,249,250,0.95)}
     .notice-wrap{display:flex;justify-content:center;margin-top:22px;position:relative;z-index:2;padding:0 26px}
@@ -56,6 +71,7 @@ foreach ($dbPaths as $dbPath) {
     nav a{color:var(--navy);text-decoration:none;font-size:14px}
     /* left and right groups inside nav; right group pushed using margin-left */
     nav .nav-left{display:flex;gap:18px}
+    /* (menu left unchanged) */
     nav .nav-right{margin-left:auto;display:flex;gap:18px;align-items:center}
     /* ensure spacing between last left link and the account links */
     nav .nav-left a:last-child{margin-right:18px}
@@ -64,6 +80,7 @@ foreach ($dbPaths as $dbPath) {
     .hero{height:220px;background:linear-gradient(135deg,var(--navy) 10%, rgba(47,93,74,0.85) 100%);display:flex;align-items:center;justify-content:center;color:var(--boat-white);position:relative}
     .hero .hero-inner{max-width:var(--max-width);text-align:center}
     .hero .icon{width:64px;height:64px;border-radius:50%;background:var(--ocean);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 6px 18px rgba(31,47,69,0.25)}
+    .hero .icon svg{width:62%;height:62%}
     .hero h1{margin:0;font-size:28px;font-weight:700}
     .hero p{margin:8px 0 0;color:rgba(248,249,250,0.9)}
 
@@ -164,7 +181,7 @@ foreach ($dbPaths as $dbPath) {
         </div>
         <div class="nav-right">
           <?php if ($loggedIn): ?>
-            <a href="account.php">My Account</a>
+            <a href="MyAccount.php">My Account</a>
             <a href="logout.php" class="btn ghost">Log out</a>
           <?php else: ?>
             <a href="BlueTeam_LoginPage.php">Login/Register</a>
@@ -177,7 +194,13 @@ foreach ($dbPaths as $dbPath) {
   <!-- Hero -->
   <section class="hero">
     <div class="hero-inner">
-      <div class="icon">👤</div>
+      <div class="icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+          <!-- user silhouette: head + shoulders, purple fill to match reference -->
+          <circle cx="32" cy="20" r="10" fill="#5B3FA0" />
+          <path d="M16 44c0-8.8 7.2-16 16-16s16 7.2 16 16v4H16v-4z" fill="#5B3FA0" />
+        </svg>
+      </div>
       <h1>Welcome Back</h1>
       <p>Log in to manage your reservations at Moffat Bay Marina</p>
     </div>
@@ -192,8 +215,7 @@ foreach ($dbPaths as $dbPath) {
       <div class="card-wrap">
       <div class="card-grid">
         <div class="card-left">
-          <h2 style="margin-top:0;color:var(--navy)">Login to Your Account</h2>
-          <p class="small">Access your reservations and account settings</p>
+          <p class="small" style="margin-top:0;color:var(--navy)">Access your reservations and account settings</p>
 
           <div id="error" class="error"></div>
           <div id="success" class="success"></div>
@@ -220,7 +242,12 @@ foreach ($dbPaths as $dbPath) {
         <div class="card-right">
           <div class="register-panel">
             <div class="top">
-              <div style="width:56px;height:56px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;margin-right:10px">👤</div>
+              <div style="width:56px;height:56px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;margin-right:10px">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" role="img">
+                  <circle cx="32" cy="20" r="8" fill="#5B3FA0" />
+                  <path d="M20 44c0-6.6 5.4-12 12-12s12 5.4 12 12v2H20v-2z" fill="#5B3FA0" />
+                </svg>
+              </div>
             </div>
             <div style="padding:18px;text-align:center">
               <h3 style="margin-top:0;color:var(--navy)">New to Moffat Bay?</h3>
@@ -259,7 +286,7 @@ foreach ($dbPaths as $dbPath) {
     (function(){
       const img = document.getElementById('siteLogo');
       if(!img) return;
-      const absolute = 'file:///C:/Users/awede/Desktop/BCS%20Degree%20-%202025/Winter%202025/Capstone/Moffat%20Bay%20Marina%20Logo.png';
+      const absolute = 'logo.png';
       img.addEventListener('error', function handler(){
         // first fallback: if we haven't tried the absolute path yet, try it
         if(!this.dataset.triedAbsolute){
