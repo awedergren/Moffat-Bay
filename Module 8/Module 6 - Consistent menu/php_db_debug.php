@@ -1,4 +1,11 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: php_db_debug.php
+Purpose: Diagnostic helper for PHP→MySQL connectivity. Non-executing header.
+*/
 // php_db_debug.php — diagnostic helper for PHP→MySQL connectivity
 // Place in your web root and open in browser (http://localhost/php_db_debug.php)
 ini_set('display_errors', 1);

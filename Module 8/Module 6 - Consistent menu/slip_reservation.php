@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: slip_reservation.php
+Purpose: Slip reservation flow — select dates and boat, check availability, and choose a slip.
+This documentation is non-executing and safe; it does not change behavior or output.
+*/
 /**
  * Jonah Aney 02/12/26
  * Moffat Bay: Slip Reservation Page
@@ -26,6 +34,15 @@
 
 session_start();
 require_once "db.php";
+
+// Lightweight DB error logger (appends to db_errors.txt in project dir)
+if (!function_exists('log_db_error')) {
+  function log_db_error($msg){
+    $path = __DIR__ . DIRECTORY_SEPARATOR . 'db_errors.txt';
+    $line = date('[Y-m-d H:i:s] ') . $msg . PHP_EOL;
+    @file_put_contents($path, $line, FILE_APPEND | LOCK_EX);
+  }
+}
 
 // Determine login state and form attributes early to avoid undefined variable warnings
 $loggedIn = !empty($_SESSION['user_id']) || !empty($_SESSION['username']);
@@ -133,6 +150,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $newBoatName   = trim($_POST['new_boat_name'] ?? '');
     $newBoatLength = trim($_POST['new_boat_length'] ?? '');
 
+    // If end date was not provided, default to start + 30 days to reduce user errors
+    if (empty($endDate) && !empty($startDate)) {
+      $sdTmp = DateTime::createFromFormat('Y-m-d', $startDate);
+      if ($sdTmp) {
+        $sdTmp->modify('+30 days');
+        $endDate = $sdTmp->format('Y-m-d');
+      }
+    }
+
     // Normalize numeric values
     $slipSizeNum = is_numeric($slipSize) ? intval($slipSize) : 0;
     $newBoatLengthNum = is_numeric($newBoatLength) ? intval($newBoatLength) : 0;
@@ -204,12 +230,13 @@ if (isset($_POST['check_availability'])) {
     if (!$sd || !$ed) {
       $error = "Please provide valid start and end dates.";
     } else {
-      if ($sd < $today) {
+        if ($sd < $today) {
         $error = "Start date cannot be in the past.";
       } else {
-        $minEnd = (clone $sd)->modify('+1 month');
+        // one "month" is defined as 30 days
+        $minEnd = (clone $sd)->modify('+30 days');
         if ($ed < $minEnd) {
-          $error = "Reservations must be at least one month long.";
+          $error = "Reservations must be at least one month (30 days) long.";
         }
       }
     }
@@ -248,33 +275,8 @@ if (isset($_POST['check_availability'])) {
 
 // Only run query if no validation error
     if (!$error) {
-
-        $sql = "
-            SELECT COUNT(*)
-            FROM slips s
-            WHERE s.slip_size = :slip_size
-            AND s.slip_ID NOT IN (
-                SELECT r.slip_ID
-                FROM reservations r
-                WHERE r.reservation_status = 'confirmed'
-                AND (:start_date <= r.end_date
-                     AND :end_date >= r.start_date)
-            )
-        ";
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':slip_size'  => $slipSize,
-            ':start_date' => $startDate,
-            ':end_date'   => $endDate
-        ]);
-
-        $availableCount = (int)$stmt->fetchColumn();
-
-        if ($availableCount > 0) {
-            $availabilitySuccess = "Slip available! You may confirm your reservation.";
-
-            // Server-side: compute defensive estimated cost for display
+        try {
+            // Determine the boat length to ensure we only return slips that fit the boat
             $boatLength = 0;
             if (!empty($userBoats)) {
               foreach ($userBoats as $b) {
@@ -296,57 +298,130 @@ if (isset($_POST['check_availability'])) {
               } catch (Exception $e) { }
             }
 
-            $sd = DateTime::createFromFormat('Y-m-d', $startDate);
-            $ed = DateTime::createFromFormat('Y-m-d', $endDate);
-            $months = 1;
-            if ($sd && $ed) {
-              $interval = $sd->diff($ed);
-              $months = ($interval->y * 12) + $interval->m + (($interval->d > 0) ? 1 : 0);
-              if ($months < 1) $months = 1;
-            }
-            $pricePerFoot = 10.50;
-            $hookupPerMonth = 10.50;
-            $cost = ($boatLength * $pricePerFoot) + ($hookupPerMonth * $months);
-            $availabilityCost = round($cost,2);
-            $availabilityBase = round(($boatLength * $pricePerFoot),2);
-            $availabilityHookup = round(($hookupPerMonth * $months),2);
-            $availabilityMonths = intval($months);
+            // The required slip size must fit both the requested slip size and the boat length
+            $requiredSize = max(intval($slipSizeNum), intval($boatLength));
 
-            // Build a slip availability map: fetch slips matching the selected slip size (exact)
-            try {
-              $sizeFilter = intval($slipSizeNum) > 0 ? intval($slipSizeNum) : 0;
-              $sstmt = $pdo->prepare("SELECT slip_ID, slip_name, slip_size, slip_status, location_code FROM slips WHERE slip_size = :sizeFilter ORDER BY slip_size, slip_ID");
-              $sstmt->execute([':sizeFilter' => $sizeFilter]);
-              $slips = $sstmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-              $rcheck = $pdo->prepare("SELECT COUNT(*) FROM reservations r WHERE r.slip_ID = :sid AND r.reservation_status = 'confirmed' AND (:start_date <= r.end_date AND :end_date >= r.start_date)");
-              foreach ($slips as $s) {
-                $sid = $s['slip_ID'] ?? $s['slipId'] ?? $s['id'] ?? null;
-                $sname = $s['slip_name'] ?? $s['name'] ?? ('Slip ' . $sid);
-                $ssize = intval($s['slip_size'] ?? $s['size'] ?? 0);
-                $sstatus = strtolower($s['slip_status'] ?? $s['status'] ?? 'active');
-                $loc = $s['location_code'] ?? $s['location'] ?? '';
-                $rcheck->execute([':sid' => $sid, ':start_date' => $startDate, ':end_date' => $endDate]);
-                $conflicts = (int)$rcheck->fetchColumn();
-                $isAvailable = ($conflicts === 0) && ($sstatus !== 'out_of_service' && $sstatus !== 'offline');
-                $availableSlips[] = [
-                  'id' => $sid,
-                  'name' => $sname,
-                  'size' => $ssize,
-                  'status' => $sstatus,
-                  'location_code' => $loc,
-                  'available' => $isAvailable
-                ];
-              }
-              // persist the available slips in session so the next POST (confirm) can validate user's choice
-              $_SESSION['available_slips'] = $availableSlips;
-            } catch (Exception $e) {
-              // ignore map errors; leave $availableSlips empty
+            $sql = "
+                SELECT COUNT(*)
+                FROM slips s
+                WHERE s.slip_size >= :required_size
+                AND s.slip_ID NOT IN (
+                    SELECT r.slip_ID
+                    FROM reservations r
+                    WHERE r.reservation_status = 'confirmed'
+                    AND (:start_date <= r.end_date
+                         AND :end_date >= r.start_date)
+                )
+            ";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':required_size' => $requiredSize,
+                ':start_date' => $startDate,
+                ':end_date'   => $endDate
+            ]);
+
+            $availableCount = (int)$stmt->fetchColumn();
+
+            if ($availableCount > 0) {
+                $availabilitySuccess = "Slip available! You may confirm your reservation.";
+
+                // Server-side: compute defensive estimated cost for display
+                $boatLength = 0;
+                if (!empty($userBoats)) {
+                  foreach ($userBoats as $b) {
+                    if ((string)($b['boat_ID'] ?? $b['boat_id'] ?? '') === (string)$boatID) {
+                      $boatLength = intval($b['boat_length'] ?? $b['length_ft'] ?? 0);
+                      break;
+                    }
+                  }
+                }
+                if ($boatLength <= 0 && $boatID === 'add_new') {
+                  $boatLength = $newBoatLengthNum;
+                }
+                if ($boatLength <= 0) {
+                  try {
+                    $q = $pdo->prepare("SELECT boat_length, length_ft FROM boats WHERE boat_ID = :id OR boat_id = :id LIMIT 1");
+                    $q->execute([':id' => $boatID]);
+                    $r = $q->fetch(PDO::FETCH_ASSOC);
+                    if ($r) $boatLength = intval($r['boat_length'] ?? $r['length_ft'] ?? 0);
+                  } catch (Exception $e) { }
+                }
+
+                $sd = DateTime::createFromFormat('Y-m-d', $startDate);
+                $ed = DateTime::createFromFormat('Y-m-d', $endDate);
+                $months = 1;
+                if ($sd && $ed) {
+                  // calculate days difference and convert to 30-day months
+                  $days = max(0, (int)ceil(($ed->getTimestamp() - $sd->getTimestamp()) / 86400));
+                  $months = max(1, (int)ceil($days / 30));
+                }
+                $pricePerFoot = 10.50;
+                $hookupPerMonth = 10.50;
+                $cost = ($boatLength * $pricePerFoot) + ($hookupPerMonth * $months);
+                $availabilityCost = round($cost,2);
+                $availabilityBase = round(($boatLength * $pricePerFoot),2);
+                $availabilityHookup = round(($hookupPerMonth * $months),2);
+                $availabilityMonths = intval($months);
+
+                // Build a slip availability map: fetch slips matching the selected slip size (exact)
+                try {
+                  $sizeFilter = $requiredSize;
+                  $sstmt = $pdo->prepare("SELECT slip_ID, slip_name, slip_size, slip_status, location_code FROM slips WHERE slip_size >= :sizeFilter ORDER BY slip_size, slip_ID");
+                  $sstmt->execute([':sizeFilter' => $sizeFilter]);
+                  $slips = $sstmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                  $rcheck = $pdo->prepare("SELECT COUNT(*) FROM reservations r WHERE r.slip_ID = :sid AND r.reservation_status = 'confirmed' AND (:start_date <= r.end_date AND :end_date >= r.start_date)");
+                  foreach ($slips as $s) {
+                    $sid = $s['slip_ID'] ?? $s['slipId'] ?? $s['id'] ?? null;
+                    $sname = $s['slip_name'] ?? $s['name'] ?? ('Slip ' . $sid);
+                    $ssize = intval($s['slip_size'] ?? $s['size'] ?? 0);
+                    $sstatus = strtolower($s['slip_status'] ?? $s['status'] ?? 'active');
+                    $loc = $s['location_code'] ?? $s['location'] ?? '';
+                    $rcheck->execute([':sid' => $sid, ':start_date' => $startDate, ':end_date' => $endDate]);
+                    $conflicts = (int)$rcheck->fetchColumn();
+                    $isAvailable = ($conflicts === 0) && ($sstatus !== 'out_of_service' && $sstatus !== 'offline');
+                    $availableSlips[] = [
+                      'id' => $sid,
+                      'name' => $sname,
+                      'size' => $ssize,
+                      'status' => $sstatus,
+                      'location_code' => $loc,
+                      'available' => $isAvailable
+                    ];
+                  }
+                  // persist the available slips in session so the next POST (confirm) can validate user's choice
+                  $_SESSION['available_slips'] = $availableSlips;
+                } catch (Exception $e) {
+                  // log map errors
+                  log_db_error('Slip-map error: ' . $e->getMessage() . ' POST: ' . json_encode($_POST));
+                }
+            } else {
+                $error = "No slips available for those dates.";
             }
-        } else {
-            $error = "No slips available for those dates.";
+        } catch (Exception $e) {
+            // log the exception and provide a generic error message
+            log_db_error('Availability error: ' . $e->getMessage() . ' POST: ' . json_encode($_POST));
+            $error = "Availability check failed. Please try again.";
         }
     }
 }
+
+          // If this was an AJAX request, return JSON (used by the client-side availability check)
+          if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+              'error' => $error ?: null,
+              'availableCount' => $availableCount ?? 0,
+              'availableSlips' => $availableSlips,
+              'estimated' => [
+                'cost' => $availabilityCost,
+                'base' => $availabilityBase,
+                'hookup' => $availabilityHookup,
+                'months' => $availabilityMonths
+              ]
+            ]);
+            exit();
+          }
 
 // CONFIRM RESERVATION
 if (isset($_POST['confirm_reservation'])) {
@@ -598,14 +673,27 @@ if (isset($_POST['confirm_reservation'])) {
     /* Utility: hide buttons until explicitly shown by JS */
     .form-actions .btn-secondary.hidden { display: none !important; }
     .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"], .form-group select{width:100%;box-sizing:border-box;padding:.45rem;border:1px solid #ccc;border-radius:4px}
-    /* Add-boat panel should span full width and align fields neatly */
-    .form-group.add-boat{grid-column:1/-1;display:grid;grid-template-columns:1fr 140px;gap:1rem;align-items:center;margin-top:1.25rem}
-    .form-group.add-boat > label{grid-column:1/-1;margin-bottom:.5rem;margin-top:1.5rem}
+    /* Add-boat panel should span full width and align fields neatly
+       Increase vertical spacing below the 'Add New Boat' label and
+       make the spacing between the name and length fields consistent. */
+    .form-group.add-boat{
+      grid-column:1/-1;
+      display:grid;
+      grid-template-columns:1fr 140px;
+      gap:20px; /* horizontal + vertical gap between grid items */
+      align-items:center;
+      margin-top:1.25rem;
+    }
+    .form-group.add-boat > label{
+      grid-column:1/-1;
+      margin-bottom:12px; /* increased spacing below the label */
+      margin-top:1.5rem;
+    }
     .form-group.add-boat input[type="text"]{grid-column:1}
     .form-group.add-boat input[type="number"]{grid-column:2}
     .form-group.add-boat input[type="hidden"]{grid-column:1/-1}
     @media(max-width:600px){
-      .form-group.add-boat{grid-template-columns:1fr}
+      .form-group.add-boat{grid-template-columns:1fr;gap:12px}
       .form-group.add-boat input[type="number"]{grid-column:1}
     }
     .form-actions{display:flex;gap:.5rem;margin-top:3rem;clear:both}
@@ -666,12 +754,58 @@ if (isset($_POST['confirm_reservation'])) {
     .reservation-card > .reservation-card-actions-inline{
       position:static !important;
       display:flex;
+      flex-direction:column; /* stack buttons vertically so Add Boat sits below Availability */
       justify-content:center;
-      gap:10px; /* horizontal spacing between buttons */
+      gap:0; /* no vertical gap when only one button present */
       margin-top:80px !important; /* reduced by 4px */
       margin-bottom:15px !important; /* reduced vertical space below actions */
       z-index:2;
       pointer-events:auto;
+      align-items:center;
+    }
+    /* Prevent action buttons from stretching to full card width on this page
+       Cover button element and primary/secondary classes explicitly. */
+    .reservation-card > .reservation-card-actions-inline button,
+    .reservation-card > .reservation-card-actions-inline .btn-primary,
+    .reservation-card > .reservation-card-actions-inline .btn-secondary,
+    .reservation-card .reservation-card-actions button,
+    .reservation-card .reservation-card-actions .btn-primary,
+    .reservation-card .reservation-card-actions .btn-secondary {
+      width: auto !important;
+      display: inline-block !important;
+      min-width: 0 !important;
+      max-width: none !important; /* allow button to size to content */
+      box-sizing: border-box !important;
+      white-space: nowrap !important;
+      padding: 12px 25px !important; /* horizontal padding fixed to 25px each side */
+    }
+    @media (max-width:480px){
+      .reservation-card > .reservation-card-actions-inline button,
+      .reservation-card > .reservation-card-actions-inline .btn-primary,
+      .reservation-card > .reservation-card-actions-inline .btn-secondary { min-width:72px !important; padding:10px 18px !important; max-width: none !important; }
+    }
+    /* When the Add Boat button is visible, apply vertical spacing (15px requested) */
+    .reservation-card > .reservation-card-actions-inline.has-add { gap:15px; }
+    /* Pull error/notice messages up slightly to reduce space above them (page-scoped) */
+    .reservation-card .alert.alert-error { margin-top: -20px !important; }
+    /* Remove focus outlines from buttons on this page only (keeps global focus behavior elsewhere) */
+    .reservation-frame .btn, .reservation-frame .form-actions .btn {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    .reservation-frame .btn:focus, .reservation-frame .btn:active, .reservation-frame .btn:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    /* Remove outlines for primary/secondary action buttons on this page specifically */
+    .reservation-card .btn-primary:focus,
+    .reservation-card .btn-primary:active,
+    .reservation-card .btn-primary:focus-visible,
+    .reservation-card .btn-secondary:focus,
+    .reservation-card .btn-secondary:active,
+    .reservation-card .btn-secondary:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
     }
     /* Ensure the Add Boat button stays hidden until JS removes the 'hidden' class */
     .reservation-card > .reservation-card-actions-inline .hidden{display:none !important}
@@ -684,10 +818,10 @@ if (isset($_POST['confirm_reservation'])) {
     .reservation-steps .step .step-circle{width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);background:#e6eef4}
     /* Active step: inverted / cream palette to stand out against ocean background */
     .reservation-steps .step.active .step-circle{
-      background:#F2E6C9; /* cream */
-      color:var(--navy);
-      border:2px solid rgba(31,47,69,0.06);
-      box-shadow:0 8px 22px rgba(31,47,69,0.12);
+      background:#F2E6C9 !important; /* cream */
+      color:var(--navy) !important;
+      border:2px solid rgba(31,47,69,0.06) !important;
+      box-shadow:0 8px 22px rgba(31,47,69,0.12) !important;
     }
     .reservation-steps .step .step-label{display:block;font-size:13px;color:var(--boat-white);margin-top:8px;text-align:center}
     /* Connector line between steps is a flexible item so circles spread evenly */
@@ -859,12 +993,7 @@ if (isset($_POST['confirm_reservation'])) {
   <div class="alert alert-success"><?= $availabilitySuccess ?></div>
 <?php endif; ?>
 
-<?php if (!is_null($availabilityCost)): ?>
-  <div class="alert alert-info">
-    <div>Estimated Total: <strong>$<?= number_format($availabilityCost,2) ?></strong></div>
-    <div style="font-size:.95rem;margin-top:.25rem">Slip: <strong>$<?= number_format($availabilityBase ?? 0,2) ?></strong> &nbsp; | &nbsp; Electric hookup (<?= intval($availabilityMonths ?? 0) ?> mo): <strong>$<?= number_format($availabilityHookup ?? 0,2) ?></strong></div>
-  </div>
-<?php endif; ?>
+<?php /* Removed duplicate Estimated Total alert — use the reservation-cost card only */ ?>
 
 <!-- Slip availability map will be rendered inside the form so selections submit correctly -->
 
@@ -929,7 +1058,7 @@ if (isset($_POST['confirm_reservation'])) {
       </div>
 
       <div class="form-group reservation-cost">
-        <label>Estimated Cost</label>
+        <label>Reservation Cost</label>
         <div id="reservationFormula" class="form-note-inline" style="margin-top:.25rem;font-size:.95rem;display:flex;flex-direction:column;gap:.5rem;text-align:center;">
           <div>Slip cost (per month): (<strong>$10.50</strong> × <span id="reservationLengthDisplay">0</span> ft) = <strong id="reservationBaseMonthlyDisplay">$0.00</strong></div>
           <div>Electric Hookup (per month): <strong id="reservationHookupMonthlyDisplay">$10.50</strong></div>
@@ -940,9 +1069,9 @@ if (isset($_POST['confirm_reservation'])) {
         <input type="hidden" name="estimated_base" id="estimatedBaseInput" value="">
         <input type="hidden" name="estimated_hookup" id="estimatedHookupInput" value="">
         <!-- Check Availability button placed directly under the Total Cost inside the card -->
-        <div class="reservation-card-actions-inline" style="display:flex;justify-content:center;margin-top:82px;margin-bottom:15px;">
-          <button type="submit" name="check_availability" class="btn-primary" style="background:#F2C36A;color:#0f2540;border:1px solid rgba(31,47,69,0.9);padding:12px 22px;border-radius:8px;box-shadow:0 4px 12px rgba(31,47,69,0.08);font-weight:800;letter-spacing:0.3px;line-height:1.1;font-size:16px;">Check Availability</button>
-          <button type="submit" id="addBoatBtn" name="add_boat" class="btn-secondary hidden" style="display:none;padding:12px 18px;border-radius:8px;font-weight:700;">Add Boat</button>
+        <div class="reservation-card-actions-inline" style="display:flex;flex-direction:column;justify-content:center;align-items:center;margin-top:82px;margin-bottom:15px;gap:0;">
+          <button type="submit" name="check_availability" class="btn-primary" style="background:#F2C36A;color:#0f2540;border:1px solid rgba(31,47,69,0.9);padding:12px 37.5px;border-radius:8px;box-shadow:0 4px 12px rgba(31,47,69,0.08);font-weight:800;letter-spacing:0.3px;line-height:1.1;font-size:16px;width:auto !important;max-width:none !important;display:inline-block !important;">Check Availability</button>
+          <button type="submit" id="addBoatBtn" name="add_boat" class="btn-secondary hidden" style="display:none;padding:12px 25px;border-radius:8px;font-weight:700;margin-top:15px;width:auto !important;max-width:160px !important;display:inline-block !important;">Add Boat</button>
         </div>
       </div>
       </div>
@@ -960,6 +1089,20 @@ if (isset($_POST['confirm_reservation'])) {
                   <option value="<?= htmlspecialchars($opt['id']) ?>"><?= htmlspecialchars($opt['name']) ?> (<?= htmlspecialchars($opt['location_code'] ?? '') ?>)</option>
                 <?php endforeach; ?>
               </select>
+              <!-- Marina slip map (visual reference) -->
+              <div class="slip-map" id="availableSlipMap" style="margin-top:.75rem;">
+                <div class="slip-grid" id="slipGrid">
+                  <?php foreach ($availableSlips as $s):
+                    $isAvail = !empty($s['available']);
+                    $sid = htmlspecialchars($s['id']);
+                    $loc = htmlspecialchars($s['location_code'] ?? ($s['name'] ?? ''));
+                  ?>
+                    <div class="slip <?= $isAvail ? 'available' : 'unavailable' ?>" data-slip-id="<?= $sid ?>" role="button" tabindex="0" aria-pressed="false">
+                      <div class="meta"><?= $loc ?></div>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
             </div>
           <?php endif; ?>
       <?php endif; ?>
@@ -995,36 +1138,18 @@ if (isset($_POST['confirm_reservation'])) {
   start.min = isoToday;
   // if start has no value, set to today for convenience
   if(!start.value) start.value = isoToday;
-
-  // If the page was reloaded, reset the form state (dates, slip size, boat selection)
-  try {
-    let navType = null;
-    if (performance.getEntriesByType) {
-      const entries = performance.getEntriesByType('navigation');
-      if (entries && entries[0] && entries[0].type) navType = entries[0].type;
-    }
-    // older API
-    if (!navType && performance.navigation) navType = performance.navigation.type === 1 ? 'reload' : 'navigate';
-    if (navType === 'reload') {
-      start.value = isoToday;
-      end.value = '';
-      slipSelect.value = '';
-      boatSelect.value = '';
-      if(addBoatPanel) addBoatPanel.style.display = 'none';
-      if(newBoatName) newBoatName.value = '';
-      if(newBoatLength) newBoatLength.value = '';
-      computeCost();
-    }
-  } catch(e) {}
+  
+  // (Page reload clearing is handled later after all controls are bound)
 
   function setEndMinFromStart(){
     if(!start.value) return;
     const s = new Date(start.value);
     const minEnd = new Date(s);
-    // add one month: preserve day where possible
-    minEnd.setMonth(minEnd.getMonth()+1);
+    // add 30 days (one month defined as 30 days)
+    minEnd.setDate(minEnd.getDate() + 30);
     end.min = minEnd.toISOString().slice(0,10);
-    if(!end.value || new Date(end.value) < minEnd) end.value = end.min;
+    // Automatically select end date one month (30 days) from the chosen start date.
+    end.value = end.min;
   }
   setEndMinFromStart();
   start.addEventListener('change', setEndMinFromStart);
@@ -1048,6 +1173,11 @@ if (isset($_POST['confirm_reservation'])) {
       // also control inline style to ensure hidden state in case of CSS conflicts
       try { addBoatBtn.style.display = show ? '' : 'none'; } catch(e){}
     }
+    // toggle container class so spacing is applied only when Add Boat is visible
+    try {
+      const actionsInline = document.querySelector('.reservation-card > .reservation-card-actions-inline');
+      if (actionsInline) actionsInline.classList.toggle('has-add', !!show);
+    } catch(e){}
   }
   if(boatSelect) boatSelect.addEventListener('change', updateAddBoatVisibility);
   if(newBoatName) newBoatName.addEventListener('input', updateAddBoatVisibility);
@@ -1203,6 +1333,272 @@ if (isset($_POST['confirm_reservation'])) {
   }
     // initial cost compute
     computeCost();
+})();
+
+// Ensure add-boat inputs clear on full page reload: run after DOM is ready and controls exist
+document.addEventListener('DOMContentLoaded', function(){
+  try{
+    var navType = null;
+    if (performance.getEntriesByType){
+      var entries = performance.getEntriesByType('navigation');
+      if (entries && entries[0] && entries[0].type) navType = entries[0].type;
+    }
+    if (!navType && performance.navigation) navType = performance.navigation.type === 1 ? 'reload' : 'navigate';
+    if (navType === 'reload' || navType === 'back_forward'){
+      // clear form fields to ensure a fresh reservation on reload
+      var start = document.querySelector('input[name="start_date"]');
+      var end = document.querySelector('input[name="end_date"]');
+      var boatSelect = document.querySelector('select[name="boat_id"]');
+      var slipSelect = document.querySelector('select[name="slip_size"]');
+      var addBoatPanel = document.getElementById('addBoatPanel');
+      var newBoatName = document.getElementById('newBoatName');
+      var newBoatLength = document.getElementById('newBoatLength');
+      var selectedSlip = document.getElementById('selected_slip_id');
+      var availableWrapper = document.getElementById('availableSlipWrapper');
+      var availableMap = document.getElementById('availableSlipMap');
+      var slipGrid = document.getElementById('slipGrid');
+      var confirmBtn = document.getElementById('confirmBtn');
+      // inputs
+      if(start) start.value = '';
+      if(end) end.value = '';
+      // selects: clear selection and remove any selected attributes
+      if(boatSelect){ boatSelect.value = ''; Array.from(boatSelect.options||[]).forEach(function(o){ o.selected = false; }); }
+      if(slipSelect){ slipSelect.value = ''; Array.from(slipSelect.options||[]).forEach(function(o){ o.selected = false; }); }
+      if(selectedSlip){ selectedSlip.value = ''; Array.from(selectedSlip.options||[]).forEach(function(o){ o.selected = false; }); }
+      // add-boat panel and inputs
+      if(addBoatPanel) addBoatPanel.style.display = 'none';
+      if(newBoatName) newBoatName.value = '';
+      if(newBoatLength) newBoatLength.value = '';
+      // remove any availability UI rendered by previous checks
+      if(availableWrapper) availableWrapper.remove();
+      if(availableMap) availableMap.remove();
+      if(slipGrid) slipGrid.innerHTML = '';
+      // hide confirm button until availability is checked again
+      if(confirmBtn) confirmBtn.style.display = 'none';
+      // clear estimated inputs and displays
+      try{ var estCost = document.getElementById('estimatedCostInput'); if(estCost) estCost.value = ''; }catch(e){}
+      try{ var estBase = document.getElementById('estimatedBaseInput'); if(estBase) estBase.value = ''; }catch(e){}
+      try{ var estHook = document.getElementById('estimatedHookupInput'); if(estHook) estHook.value = ''; }catch(e){}
+      try{ var estMonths = document.getElementById('estimatedMonthsInput'); if(estMonths) estMonths.value = ''; }catch(e){}
+      try{ var disp = document.getElementById('reservationCostTotalFinal'); if(disp) disp.textContent = '$0.00'; }catch(e){}
+      try{ var lenDisp = document.getElementById('reservationLengthDisplay'); if(lenDisp) lenDisp.textContent = '0'; }catch(e){}
+      try{ var monthsDisp = document.getElementById('reservationMonthsDisplay'); if(monthsDisp) monthsDisp.textContent = '0'; }catch(e){}
+    }
+  }catch(e){ /* ignore */ }
+});
+
+// When the page is restored from the back/forward cache (bfcache), trigger the same clearing logic
+window.addEventListener('pageshow', function(e){
+  if (e && e.persisted) {
+    try { document.dispatchEvent(new Event('DOMContentLoaded')); } catch(err) { /* ignore */ }
+  }
+});
+
+// AJAX availability check: intercept Check Availability and request JSON
+(function(){
+  const availBtn = document.querySelector('button[name="check_availability"]');
+  const form = document.getElementById('reservationForm');
+  if(!availBtn || !form) return;
+
+  // Helper: set the active reservation step (1-based)
+  function setFlowStep(n){
+    try{
+      const steps = document.querySelectorAll('.reservation-steps .step');
+      const NAVY = '#1F2F45';
+      const CREAM = '#F2E6C9';
+      const BOAT_WHITE = '#F8F9FA';
+      steps.forEach((el, idx) => {
+        const isActive = (idx === (n-1));
+        el.classList.toggle('active', isActive);
+        // ensure visual fallback: update circle and label inline in case CSS specificity
+        const circle = el.querySelector('.step-circle');
+        const label = el.querySelector('.step-label');
+        if(circle){
+          if(isActive){
+            circle.style.background = CREAM;
+            circle.style.color = NAVY;
+            circle.style.border = '2px solid rgba(31,47,69,0.06)';
+            circle.style.boxShadow = '0 8px 22px rgba(31,47,69,0.12)';
+          } else {
+            circle.style.background = '';
+            circle.style.color = '';
+            circle.style.border = '';
+            circle.style.boxShadow = '';
+          }
+        }
+        if(label){
+          label.style.color = isActive ? NAVY : BOAT_WHITE;
+        }
+      });
+    }catch(e){/* ignore */}
+  }
+
+  availBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    // update visual flow tracker to step 2 (Select Slip) as availability begins
+    setFlowStep(2);
+    // Ensure end date is set to start + 30 days if missing so server can search
+    try{
+      const startInput = form.querySelector('input[name="start_date"]');
+      const endInput = form.querySelector('input[name="end_date"]');
+      if(startInput && startInput.value && endInput && !endInput.value){
+        const s = new Date(startInput.value);
+        const minEnd = new Date(s);
+        minEnd.setDate(minEnd.getDate() + 30);
+        endInput.value = minEnd.toISOString().slice(0,10);
+        // update min as well
+        endInput.min = endInput.value;
+        try{ computeCost(); }catch(e){}
+      }
+    }catch(err){}
+    const fd = new FormData(form);
+    // include the button value so server knows action
+    fd.set('check_availability', '1');
+    fetch(window.location.href, {method: 'POST', body: fd, headers: {'X-Requested-With':'XMLHttpRequest'}})
+      .then(r => r.json())
+      .then(json => {
+        // create or update message container
+        let msg = document.getElementById('clientAvailabilityMsg');
+        if(!msg){ msg = document.createElement('div'); msg.id = 'clientAvailabilityMsg'; form.parentNode.insertBefore(msg, form); }
+        msg.innerHTML = '';
+        if(json.error){
+          msg.className = 'alert alert-error'; msg.textContent = json.error; return;
+        }
+        const cnt = json.availableCount || 0;
+        if(cnt > 0){
+          msg.className = 'alert alert-success';
+          msg.textContent = 'Slips available: ' + cnt + '. Choose one from the list below.';
+          // ensure tracker visually indicates step 2 (Select Slip)
+          try{ setFlowStep(2); }catch(e){}
+          // populate slip select
+          let sel = document.getElementById('selected_slip_id');
+          if(!sel){
+            const wrapper = document.createElement('div'); wrapper.style.marginTop = '.75rem';
+            wrapper.id = 'availableSlipWrapper';
+            const label = document.createElement('label'); label.setAttribute('for','selected_slip_id'); label.textContent = 'Choose an available slip';
+            sel = document.createElement('select'); sel.name = 'selected_slip_id'; sel.id = 'selected_slip_id'; sel.required = true;
+            const opt0 = document.createElement('option'); opt0.value = ''; opt0.textContent = '-- Select a slip --'; sel.appendChild(opt0);
+            wrapper.appendChild(label); wrapper.appendChild(sel);
+            // insert before the form actions
+            const actions = form.querySelector('.form-actions');
+            if(actions) actions.parentNode.insertBefore(wrapper, actions);
+          } else {
+            // clear existing options
+            sel.innerHTML = '<option value="">-- Select a slip --</option>';
+          }
+          // add options from json.availableSlips
+          (json.availableSlips || []).forEach(s => {
+            if(!s.available) return;
+            const o = document.createElement('option'); o.value = s.id; o.textContent = (s.name || ('Slip ' + s.id)) + ' (' + (s.location_code || '') + ')';
+            sel.appendChild(o);
+          });
+          // render slip map
+          let grid = document.getElementById('slipGrid');
+          if(!grid){
+            const wrapper = document.createElement('div'); wrapper.className = 'slip-map'; wrapper.id = 'availableSlipMap';
+            grid = document.createElement('div'); grid.className = 'slip-grid'; grid.id = 'slipGrid'; wrapper.appendChild(grid);
+            const actions = form.querySelector('.form-actions');
+            if(actions) actions.parentNode.insertBefore(wrapper, actions);
+            else form.appendChild(wrapper);
+          } else {
+            grid.innerHTML = '';
+          }
+          (json.availableSlips || []).forEach(s => {
+            const div = document.createElement('div');
+            div.className = 'slip ' + (s.available ? 'available' : 'unavailable');
+            div.setAttribute('data-slip-id', s.id);
+            div.setAttribute('tabindex','0');
+            div.innerHTML = '<div class="meta">'+(s.location_code||s.name||('Slip '+s.id))+'</div>';
+            grid.appendChild(div);
+          });
+          // clicking a slip tile selects the option
+          grid.querySelectorAll('.slip.available').forEach(el=>{
+            el.addEventListener('click', function(){
+              const id = this.getAttribute('data-slip-id');
+              sel.value = id;
+              sel.dispatchEvent(new Event('change'));
+              // highlight
+              grid.querySelectorAll('.slip').forEach(x=>x.classList.remove('selected'));
+              this.classList.add('selected');
+            });
+            el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); } });
+          });
+          // show confirm button if present
+          const confirmBtn = document.getElementById('confirmBtn');
+          if(confirmBtn) confirmBtn.style.display = '';
+        } else {
+          msg.className = 'alert alert-error'; msg.textContent = 'No slips available for those dates.';
+          // revert flow tracker to step 1 when nothing found
+          setFlowStep(1);
+          // remove any previous slip select
+          const wrapper = document.getElementById('availableSlipWrapper'); if(wrapper) wrapper.remove();
+          const confirmBtn = document.getElementById('confirmBtn'); if(confirmBtn) confirmBtn.style.display = 'none';
+        }
+        // set estimated cost fields when provided
+        if(json.estimated){
+          try{
+            document.getElementById('estimatedCostInput').value = json.estimated.cost || '';
+            document.getElementById('estimatedBaseInput').value = json.estimated.base || '';
+            document.getElementById('estimatedHookupInput').value = json.estimated.hookup || '';
+            // update UI breakdown
+            if(document.getElementById('reservationCostTotalFinal')) document.getElementById('reservationCostTotalFinal').textContent = '$' + (json.estimated.cost || 0).toFixed(2);
+          }catch(e){}
+        }
+      })
+      .catch(err => {
+        alert('Availability check failed. Try again.');
+        console.error(err);
+      });
+  });
+  // Ensure end date is set when the form submits (covers non-AJAX submits too)
+  form.addEventListener('submit', function(evt){
+    try{
+      const startInput = form.querySelector('input[name="start_date"]');
+      const endInput = form.querySelector('input[name="end_date"]');
+      if(startInput && startInput.value && endInput && !endInput.value){
+        const s = new Date(startInput.value);
+        const minEnd = new Date(s);
+        minEnd.setDate(minEnd.getDate() + 30);
+        endInput.value = minEnd.toISOString().slice(0,10);
+        endInput.min = endInput.value;
+        try{ computeCost(); }catch(e){}
+      }
+    }catch(e){}
+  });
+  // Enable Check Availability only when required inputs populated
+  function validateAvailabilityInputs(){
+    try{
+      const start = form.querySelector('input[name="start_date"]');
+      const end = form.querySelector('input[name="end_date"]');
+      const slip = form.querySelector('select[name="slip_size"]');
+      const boat = form.querySelector('select[name="boat_id"]');
+      const newBoatName = document.getElementById('newBoatName');
+      const newBoatLength = document.getElementById('newBoatLength');
+      let ok = true;
+      if(!start || !start.value) ok = false;
+      // end may be auto-filled, but ensure at least min set
+      if(!end || !end.value) ok = false;
+      if(!slip || !slip.value) ok = false;
+      if(!boat || !boat.value) ok = false;
+      // if user selected add_new require new boat fields filled for availability
+      if(boat && boat.value === 'add_new'){
+        if(!newBoatName || !newBoatName.value.trim()) ok = false;
+        if(!newBoatLength || !newBoatLength.value.trim()) ok = false;
+      }
+      availBtn.disabled = !ok;
+      // reflect disabled state visually
+      if(availBtn.disabled) availBtn.classList.add('disabled'); else availBtn.classList.remove('disabled');
+      return ok;
+    }catch(e){ return true; }
+  }
+  // attach listeners
+  ['input','change'].forEach(evt => {
+    form.querySelectorAll('input[name="start_date"], input[name="end_date"], select[name="slip_size"], select[name="boat_id"], #newBoatName, #newBoatLength').forEach(el=>{
+      try{ el.addEventListener(evt, validateAvailabilityInputs); }catch(e){}
+    });
+  });
+  // initial validation
+  validateAvailabilityInputs();
 })();
 </script>
 </script>

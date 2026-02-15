@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: registration.php
+Purpose: User registration page and account creation flow.
+Non-executing header only; does not affect page behavior or layout.
+*/
 
 /**
  * Jonah Aney 02/04/26 

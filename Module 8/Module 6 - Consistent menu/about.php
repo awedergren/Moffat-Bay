@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: about.php
+Purpose: About page content and team information.
+This header is informational only and does not change behavior or output.
+*/
 session_start();
 require_once __DIR__ . '/db.php';
 $loggedIn = isset($_SESSION['username']);

@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: hero.php
+Purpose: Reusable hero include (sets page hero title, subtitle, and icon).
+Non-executing header only.
+*/
 // Reusable hero include
 // Usage: set the following variables before including this file:
 //   $hero_title (string) - main heading text

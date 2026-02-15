@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: db.php
+Purpose: Database connection provider — creates and returns $pdo connected to moffat_bay.
+This header is purely informational and has no runtime effect.
+*/
 // db.php - provide $pdo connected to moffat_bay
 // Tries project config first (config/db.php or db_config.php). If none found
 // attempt a reasonable local default (root, no password) and create the

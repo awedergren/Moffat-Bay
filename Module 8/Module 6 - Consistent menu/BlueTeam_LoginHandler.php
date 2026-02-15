@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: BlueTeam_LoginHandler.php
+Purpose: Handles login form submissions and session creation.
+Non-executing header only.
+*/
 // BlueTeam_LoginHandler.php
 // Clean login handler: ensures `users` table exists, seeds a demo user when empty,
 // validates POSTed credentials and sets session on success.

@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: logout.php
+Purpose: Log out user and clear session.
+Non-executing header only.
+*/
 // logout.php - destroy session and redirect to login page
 session_start();
 $_SESSION = [];

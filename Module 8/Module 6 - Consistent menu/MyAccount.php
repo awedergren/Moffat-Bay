@@ -1,4 +1,19 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: MyAccount.php
+Purpose: User account dashboard and related actions.
+This header is informational and non-destructive.
+*/
+
+/**
+ * Amanda Wedergren 
+ * 02/12/26
+ * Moffay Bay: My Account Page
+ */
+
 session_start();
 
 // Load DB (try several common locations so this page uses the same db.php)

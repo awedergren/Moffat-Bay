@@ -1,4 +1,20 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: reservation_info.php
+Purpose: Reservation information and CTA; pricing constants and content.
+Non-executing header only; does not affect output.
+*/
+
+
+/**
+ * Amanda Wedergren 
+ * 02/12/26
+ * Moffay Bay: Reservation Info Page
+ */
+
 session_start();
 ?>
 <?php

@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: index.php
+Purpose: Landing page for Moffat Bay Island Marina.
+Documentation-only comment; does not affect layout or behavior.
+-->
 <?php
 session_start();
 require_once __DIR__ . '/db.php';

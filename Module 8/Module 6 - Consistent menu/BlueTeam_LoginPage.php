@@ -1,4 +1,19 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: BlueTeam_LoginPage.php
+Purpose: Login and registration landing page for users.
+Header is a comment only and will not change behavior or rendering.
+*/
+
+/**
+ * Amanda Wedergren 
+ * 02/12/26
+ * Moffay Bay: Login Page
+ */
+
 session_start();
 // Track login state to avoid undefined-variable notices in templates
 $loggedIn = isset($_SESSION['username']) || isset($_SESSION['user_id']);

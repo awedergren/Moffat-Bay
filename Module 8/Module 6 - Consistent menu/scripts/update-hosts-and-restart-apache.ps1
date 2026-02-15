@@ -1,3 +1,10 @@
+<#
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: scripts/update-hosts-and-restart-apache.ps1
+Purpose: Helper to add hosts entry and restart Apache (requires admin). Header is non-executing.
+#>
 # Run this script as Administrator in PowerShell
 # It will append a hosts entry for module6.local and restart Apache via XAMPP.
 

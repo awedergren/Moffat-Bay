@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: nav.php
+Purpose: Shared navigation partial included on all pages.
+Header is a non-executing comment only.
+*/
 // Shared navigation partial — include this at top of pages to keep header consistent
 if (session_status() === PHP_SESSION_NONE) session_start();
 $loggedIn = isset($_SESSION['username']) || isset($_SESSION['user_id']);

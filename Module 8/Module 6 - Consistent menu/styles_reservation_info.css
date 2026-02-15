@@ -1,3 +1,10 @@
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: styles_reservation_info.css
+Purpose: Styles for reservation info page. Non-executing header.
+*/
 :root{--max-width:1100px}
 /* Map / main card width used across the page */
 :root{--map-card-width:980px;--map-card-padding:24px}
