@@ -36,7 +36,8 @@ function fmt($n){return number_format($n,2);}
     @media(max-width:900px){.cards{flex-direction:column;margin-top:-40px}.price-grid{flex-direction:column}.card{width:100%;max-width:660px}}
     /* map-cta-card styling to match surrounding site visuals and the marina map card width */
     /* match the formula/map card width and align inner content with formula-band */
-      .map-cta-card{max-width:var(--map-card-width);margin:6px auto 0;padding:0;box-sizing:border-box}
+      /* Move the CTA up 15px to reduce vertical gap above the message (force with !important) */
+      .map-cta-card{max-width:var(--map-card-width);margin:-9px auto 0 !important;padding:0;box-sizing:border-box}
     .map-cta-card .cta-card{background:#fff;border-radius:12px;padding:var(--map-card-padding);display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 14px 28px rgba(31,47,69,0.06);border:1px solid rgba(31,47,69,0.06);width:100%;box-sizing:border-box}
     .map-cta-card .cta-text{color:var(--navy);font-size:1rem}
     .map-cta-card .cta-text a{color:var(--navy);text-decoration:underline;font-weight:600}

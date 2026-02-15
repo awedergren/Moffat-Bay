@@ -176,8 +176,8 @@ if ($dbIncluded) {
           #reservation-summary-content { box-sizing: border-box !important; max-width:980px !important; width:100% !important; margin:0 auto !important; padding:0 !important; margin-top: 0 !important; }
           #reservation-summary-content .notice-wrap, #reservation-summary-content .card-wrap { box-sizing: border-box !important; width:100% !important; max-width:980px !important; margin:0 auto !important; padding:0 !important; }
           #reservation-summary-content .notice, #reservation-summary-content .card-grid { box-sizing: border-box !important; width:100% !important; max-width:980px !important; margin:0 auto !important; }
-          /* enforce overlap of 50px (negative margin) — scoped to this page only */
-          #reservation-summary-content .notice-wrap { margin-top: -40px !important; margin-bottom:12px !important; position:relative; z-index:99999 }
+          /* enforce overlap of 65px (negative margin) — scoped to this page only (moved up 15px) */
+          #reservation-summary-content .notice-wrap { margin-top: -55px !important; margin-bottom:12px !important; position:relative; z-index:99999 }
           #reservation-summary-content .notice { display:block !important; background:#2F5D4A !important; color:#F8F9FA !important; padding:18px 28px; border-radius:12px; box-shadow:0 8px 28px rgba(31,47,69,0.12); text-align:center; position:relative; z-index:100000; }
 
         @media (max-width:900px){
