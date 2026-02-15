@@ -1,7 +1,15 @@
 -- Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
 
-CREATE DATABASE IF NOT EXISTS moffat_bay DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
+CREATE DATABASE IF NOT EXISTS moffat_bay
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_general_ci;
 USE moffat_bay;
+
+DROP USER IF EXISTS 'marina_user'@'localhost';
+CREATE USER 'marina_user'@'localhost'
+  IDENTIFIED BY 'moffatbaymarina';
+GRANT ALL PRIVILEGES ON moffat_bay.* TO 'marina_user'@'localhost';
+FLUSH PRIVILEGES;
 
 -- EMPLOYEES
 CREATE TABLE IF NOT EXISTS employees (
@@ -12,7 +20,7 @@ first_name VARCHAR(100) NOT NULL,
 last_name VARCHAR(100) NOT NULL,
 position VARCHAR(100),
 date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ;
 
 -- USERS
 CREATE TABLE IF NOT EXISTS users (
