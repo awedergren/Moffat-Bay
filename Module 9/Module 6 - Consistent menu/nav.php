@@ -14,6 +14,8 @@ $loggedIn = isset($_SESSION['username']) || isset($_SESSION['user_id']);
 <header class="topbar">
   <style>
     /* Authoritative nav styles to ensure identical menu across all pages */
+    /* Reserve vertical scrollbar space site-wide to prevent layout shift when navigating pages */
+    html { overflow-y: scroll; scrollbar-gutter: stable; }
     :root{box-sizing:border-box}
     header.topbar{background:var(--boat-white) !important;border-bottom:1px solid var(--gray) !important;padding:0 !important;min-height:68px;display:block;box-sizing:border-box;position:relative !important;top:0 !important;left:0 !important;width:100% !important;z-index:1000}
     header.topbar{margin:0 !important}

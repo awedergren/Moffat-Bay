@@ -1411,7 +1411,14 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
     .hero{position:relative;z-index:1}
      /* Page-local override: match hero inner width to reservation content so
        the hero, notice, and reservation card align exactly on this page. */
-     .site-hero .site-hero-inner { max-width: 1000px !important; padding-left: var(--hero-inner-padding) !important; padding-right: var(--hero-inner-padding) !important; }
+    .site-hero .site-hero-inner { max-width: 1000px !important; padding-left: var(--hero-inner-padding,20px) !important; padding-right: var(--hero-inner-padding,20px) !important; }
+     /* Prevent layout shift on this page by forcing a stable vertical scrollbar
+       so the viewport width doesn't change when content height varies. This
+       rule is page-scoped via body.page-reservation and will not affect other pages. */
+     /* Keep a stable vertical scrollbar gutter on this page without forcing
+       a second scrollbar; rely on the site-wide `html` setting for the
+       authoritative scrollbar. */
+     body.page-reservation { scrollbar-gutter: stable; }
     @media (max-width:900px){
       .notice-wrap{margin-top:18px !important;padding:0 16px}
       .notice{max-width:100% !important;padding:12px 16px}
@@ -1631,17 +1638,59 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
                 <?php endforeach; ?>
               </select>
               <!-- Marina slip map (visual reference) -->
+              <style>
+                .slip-size-group{margin-bottom:14px}
+                .slip-size-group h4{margin:6px 0 8px;font-size:0.98rem;color:#102535}
+                .slip-columns{display:flex;gap:12px}
+                .slip-column{flex:1;min-width:0}
+                .slip-column .col-label{font-weight:800;text-align:center;margin-bottom:6px;color:#1F2F45}
+                .slip-column .slip{margin-bottom:8px}
+              </style>
               <div class="slip-map" id="availableSlipMap" style="margin-top:.75rem;">
                 <div class="slip-grid" id="slipGrid">
-                  <?php foreach ($availableSlips as $s):
-                    $isAvail = !empty($s['available']);
-                    $sid = htmlspecialchars($s['id']);
-                    $loc = htmlspecialchars($s['location_code'] ?? ('Slip ' . $s['id']));
+                  <?php
+                    // Group available slips by slip_size and render three columns (A/B/C) per size
+                    $groups = [];
+                    foreach ($availableSlips as $s) {
+                      if (empty($s['available'])) continue;
+                      $sizeKey = intval($s['size'] ?? $s['slip_size'] ?? 0);
+                      if (!isset($groups[$sizeKey])) $groups[$sizeKey] = [];
+                      $groups[$sizeKey][] = $s;
+                    }
+                    if (!empty($groups)) {
+                      // sort sizes descending (largest first) for better UX
+                      krsort($groups, SORT_NUMERIC);
+                      foreach ($groups as $size => $slipsBySize):
                   ?>
-                    <div class="slip <?= $isAvail ? 'available' : 'unavailable' ?>" data-slip-id="<?= $sid ?>" data-slip-size="<?= htmlspecialchars($s['slip_size'] ?? '') ?>" role="button" tabindex="0" aria-pressed="false" data-slip-location="<?= $loc ?>">
-                      <div class="meta"><?= $loc ?></div>
+                    <div class="slip-size-group" data-size="<?= intval($size) ?>">
+                      <h4>Size: <?= intval($size) ?> ft</h4>
+                      <div class="slip-columns">
+                        <?php
+                          // distribute slips round-robin into three columns
+                          $cols = [[],[],[]]; $ci = 0;
+                          foreach ($slipsBySize as $ss) { $cols[$ci % 3][] = $ss; $ci++; }
+                          $labels = ['A','B','C'];
+                          for ($c = 0; $c < 3; $c++):
+                        ?>
+                          <div class="slip-column">
+                            <div class="col-label"><?= $labels[$c] ?></div>
+                            <?php foreach ($cols[$c] as $tile):
+                              $isAvail = !empty($tile['available']);
+                              $sid = htmlspecialchars($tile['id']);
+                              $loc = htmlspecialchars($tile['location_code'] ?? ('Slip ' . $tile['id']));
+                            ?>
+                              <div class="slip <?= $isAvail ? 'available' : 'unavailable' ?>" data-slip-id="<?= $sid ?>" data-slip-size="<?= htmlspecialchars($tile['slip_size'] ?? $tile['size'] ?? '') ?>" role="button" tabindex="0" aria-pressed="false" data-slip-location="<?= $loc ?>">
+                                <div class="meta"><?= $loc ?></div>
+                              </div>
+                            <?php endforeach; ?>
+                          </div>
+                        <?php endfor; ?>
+                      </div>
                     </div>
-                  <?php endforeach; ?>
+                  <?php
+                      endforeach;
+                    }
+                  ?>
                 </div>
               </div>
             </div>
@@ -2280,13 +2329,14 @@ window.addEventListener('pageshow', function(e){
                           else if(locality) addrBlock = locality;
                           // Company on its own line if present
                           const companyLine = company ? (company + '<br>') : '';
-                          const contactLines = [];
-                          if(email && email !== displayName) contactLines.push(email);
-                          if(phone) contactLines.push(phone);
-                          if(addrBlock) contactLines.push(addrBlock);
-                          // Compose final HTML: display name (and company), then contact lines in small muted text
+                          // Build contact lines with full-size email/phone and muted address
+                          const contactParts = [];
+                          if(email && email !== displayName) contactParts.push('<div class="value" style="margin-top:6px">' + email + '</div>');
+                          if(phone) contactParts.push('<div class="value">' + phone + '</div>');
+                          if(addrBlock) contactParts.push('<div class="value" style="color:#6b7280;font-size:0.95rem">' + addrBlock + '</div>');
+                          // Compose final HTML: display name (and company), then contact parts (email/phone same size as values)
                           const nameHtml = (displayName || '') + (company ? '<br><small style="color:#6b7280;">' + company + '</small>' : '');
-                          const contactHtml = contactLines.length ? ('<br><small style="color:#6b7280;">' + contactLines.join('<br>') + '</small>') : '';
+                          const contactHtml = contactParts.length ? ('<br>' + contactParts.join('')) : '';
                           const setInner = (n, c) => { userVal.innerHTML = n + c; };
                           if(displayName && (phone || email || contactLines.length)){
                             setInner(nameHtml, contactHtml);
@@ -2305,12 +2355,12 @@ window.addEventListener('pageshow', function(e){
                                   let fetchedAddrBlock = '';
                                   if(fetchedAddr) fetchedAddrBlock = fetchedAddr + (fetchedLocality ? '<br>' + fetchedLocality : '');
                                   else if(fetchedLocality) fetchedAddrBlock = fetchedLocality;
-                                  const fetchedContactLines = [];
-                                  if(fetchedEmail && fetchedEmail !== fetchedName) fetchedContactLines.push(fetchedEmail);
-                                  if(fetchedPhone) fetchedContactLines.push(fetchedPhone);
-                                  if(fetchedAddrBlock) fetchedContactLines.push(fetchedAddrBlock);
+                                  const fetchedParts = [];
+                                  if(fetchedEmail && fetchedEmail !== fetchedName) fetchedParts.push('<div class="value" style="margin-top:6px">' + fetchedEmail + '</div>');
+                                  if(fetchedPhone) fetchedParts.push('<div class="value">' + fetchedPhone + '</div>');
+                                  if(fetchedAddrBlock) fetchedParts.push('<div class="value" style="color:#6b7280;font-size:0.95rem">' + fetchedAddrBlock + '</div>');
                                   const fetchedNameHtml = (fetchedName || nameHtml) + (fetchedCompany ? '<br><small style="color:#6b7280;">' + fetchedCompany + '</small>' : '');
-                                  const fetchedContactHtml = fetchedContactLines.length ? ('<br><small style="color:#6b7280;">' + fetchedContactLines.join('<br>') + '</small>') : contactHtml;
+                                  const fetchedContactHtml = fetchedParts.length ? ('<br>' + fetchedParts.join('')) : contactHtml;
                                   setInner(fetchedNameHtml, fetchedContactHtml);
                                 }).catch(()=> setInner(nameHtml, contactHtml));
                             }catch(e){ setInner(nameHtml, contactHtml); }
@@ -2721,12 +2771,12 @@ window.addEventListener('pageshow', function(e){
                     if(addr) addrBlock = addr + (locality ? '<br>' + locality : '');
                     else if(locality) addrBlock = locality;
                     const companyLine = company ? (company + '<br>') : '';
-                    const contactLines = [];
-                    if(email && email !== displayName) contactLines.push(email);
-                    if(phone) contactLines.push(phone);
-                    if(addrBlock) contactLines.push(addrBlock);
+                    const contactParts = [];
+                    if(email && email !== displayName) contactParts.push('<div class="value" style="margin-top:6px">' + email + '</div>');
+                    if(phone) contactParts.push('<div class="value">' + phone + '</div>');
+                    if(addrBlock) contactParts.push('<div class="value" style="color:#6b7280;font-size:0.95rem">' + addrBlock + '</div>');
                     const nameHtml = (displayName || '') + (company ? '<br><small style="color:#6b7280;">' + company + '</small>' : '');
-                    const contactHtml = contactLines.length ? ('<br><small style="color:#6b7280;">' + contactLines.join('<br>') + '</small>') : '';
+                    const contactHtml = contactParts.length ? ('<br>' + contactParts.join('')) : '';
                     const setInner = (n, c) => { userVal.innerHTML = n + c; };
                     if(displayName && (phone || email || contactLines.length)){
                       setInner(nameHtml, contactHtml);
@@ -2744,12 +2794,12 @@ window.addEventListener('pageshow', function(e){
                             let fetchedAddrBlock = '';
                             if(fetchedAddr) fetchedAddrBlock = fetchedAddr + (fetchedLocality ? '<br>' + fetchedLocality : '');
                             else if(fetchedLocality) fetchedAddrBlock = fetchedLocality;
-                            const fetchedContactLines = [];
-                            if(fetchedEmail && fetchedEmail !== fetchedName) fetchedContactLines.push(fetchedEmail);
-                            if(fetchedPhone) fetchedContactLines.push(fetchedPhone);
-                            if(fetchedAddrBlock) fetchedContactLines.push(fetchedAddrBlock);
+                            const fetchedContactParts = [];
+                            if(fetchedEmail && fetchedEmail !== fetchedName) fetchedContactParts.push('<div class="value" style="margin-top:6px">' + fetchedEmail + '</div>');
+                            if(fetchedPhone) fetchedContactParts.push('<div class="value">' + fetchedPhone + '</div>');
+                            if(fetchedAddrBlock) fetchedContactParts.push('<div class="value" style="color:#6b7280;font-size:0.95rem">' + fetchedAddrBlock + '</div>');
                             const fetchedNameHtml = (fetchedName || nameHtml) + (fetchedCompany ? '<br><small style="color:#6b7280;">' + fetchedCompany + '</small>' : '');
-                            const fetchedContactHtml = fetchedContactLines.length ? ('<br><small style="color:#6b7280;">' + fetchedContactLines.join('<br>') + '</small>') : contactHtml;
+                            const fetchedContactHtml = fetchedContactParts.length ? ('<br>' + fetchedContactParts.join('')) : contactHtml;
                             setInner(fetchedNameHtml, fetchedContactHtml);
                           }).catch(()=> setInner(nameHtml, contactHtml));
                       }catch(e){ setInner(nameHtml, contactHtml); }
@@ -2985,6 +3035,93 @@ window.addEventListener('pageshow', function(e){
 
 <?php include 'footer.php'; ?>
 <script>
+// Make marina map slips interactive: delegated click + keyboard support and dynamic enhancement
+(function(){
+  // helper: enhance a slip tile for keyboard accessibility
+  function enhanceTile(tile){
+    try{
+      if(!tile) return;
+      if(!tile.hasAttribute('tabindex')) tile.setAttribute('tabindex','0');
+      if(!tile.hasAttribute('role')) tile.setAttribute('role','button');
+      if(!tile.hasAttribute('aria-pressed')) tile.setAttribute('aria-pressed','false');
+    }catch(e){}
+  }
+
+  // run once on existing tiles
+  document.querySelectorAll('.slip').forEach(enhanceTile);
+
+  // delegated click handler so it works for dynamically-inserted tiles
+  document.addEventListener('click', function(evt){
+    try{
+      var tile = evt.target.closest && evt.target.closest('.slip');
+      if(!tile) return;
+      // ignore unavailable
+      if(tile.classList.contains('unavailable')) return;
+      // ensure tile is enhanced
+      enhanceTile(tile);
+      var sid = tile.getAttribute('data-slip-id');
+      if(!sid) return;
+      var slipSelect = document.getElementById('selected_slip_id');
+      if(slipSelect){ slipSelect.value = sid; slipSelect.dispatchEvent(new Event('change',{bubbles:true})); }
+      // visual selection: clear any existing selected tiles within grid or document
+      var grid = document.getElementById('slipGrid');
+      var existing = grid ? grid.querySelectorAll('.slip.selected') : document.querySelectorAll('.slip.selected');
+      existing.forEach(function(s){ s.classList.remove('selected'); try{s.setAttribute('aria-pressed','false');}catch(e){} });
+      tile.classList.add('selected'); tile.setAttribute('aria-pressed','true');
+    }catch(e){ /* ignore */ }
+  }, false);
+
+  // keyboard: if a .slip has focus, Enter or Space triggers click
+  document.addEventListener('keydown', function(e){
+    try{
+      if(e.key !== 'Enter' && e.key !== ' ') return;
+      var ae = document.activeElement;
+      if(ae && ae.classList && ae.classList.contains('slip')){
+        e.preventDefault(); ae.click();
+      }
+    }catch(err){}
+  }, false);
+
+  // If user changes the select, reflect selection visually
+  document.addEventListener('change', function(e){
+    try{
+      var target = e.target || e.srcElement;
+      if(!target) return;
+      if(target.id === 'selected_slip_id' || target.name === 'selected_slip_id'){
+        var v = target.value;
+        var grid = document.getElementById('slipGrid');
+        var existing = grid ? grid.querySelectorAll('.slip.selected') : document.querySelectorAll('.slip.selected');
+        existing.forEach(function(s){ s.classList.remove('selected'); try{s.setAttribute('aria-pressed','false');}catch(e){} });
+        if(!v) return;
+        var match = document.querySelector('.slip[data-slip-id="' + CSS.escape ? CSS.escape(v) : v + '"]');
+        if(match){ enhanceTile(match); match.classList.add('selected'); match.setAttribute('aria-pressed','true'); }
+      }
+    }catch(err){}
+  }, false);
+
+  // Observe for dynamically-inserted slip tiles and enhance them
+  var observerRoot = document.getElementById('slipGrid') || document.getElementById('availableSlipMap') || document.body;
+  try{
+    var mo = new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        (m.addedNodes||[]).forEach(function(node){
+          try{
+            if(!node) return;
+            if(node.nodeType === 1){
+              if(node.classList && node.classList.contains('slip')) enhanceTile(node);
+              // also enhance any descendant slips
+              node.querySelectorAll && node.querySelectorAll('.slip').forEach(enhanceTile);
+            }
+          }catch(e){}
+        });
+      });
+    });
+    mo.observe(observerRoot, { childList:true, subtree:true });
+  }catch(e){}
+
+})();
+</script>
+<script>
 // Defensive cleanup on page load: if the user has no start date selected, remove any availability UI
 document.addEventListener('DOMContentLoaded', function(){
   try{
@@ -3019,3 +3156,8 @@ if (!empty($_SESSION['auto_check_availability'])) {
   echo "<script>document.addEventListener('DOMContentLoaded', function(){ setTimeout(function(){ try{ var b = document.querySelector('button[name=\'check_availability\']'); if(b) b.click(); }catch(e){} }, 250); });</script>";
   unset($_SESSION['auto_check_availability']);
 }
+
+// Page-scoped alignment helper: align the reservation frame's left edge to the
+// header container so header variations (logged-in vs guest) do not shift the
+// centered content. This runs only on this page and does not modify other files.
+// alignment script removed — using page-scoped CSS centering instead
