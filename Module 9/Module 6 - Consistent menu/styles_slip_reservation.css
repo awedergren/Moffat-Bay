@@ -1,0 +1,426 @@
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 15, 2026
+Project: Moffat Bay Marina Project
+File: styles_slip_reservation.css
+Purpose: Slip reservation page styles (informational header).
+*/
+:root{
+  --navy: #1F2F45;
+  --cream: #F2E6C9;
+  --boat-white: #F8F9FA;
+  --ocean: #3F87A6;
+  --pine: #2F5D4A;
+  --gold: #F4C26B;
+  --coral: #E8896B;
+  --gray: #D8DEE4;
+  --max-width: 1100px;
+}
+
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--boat-white); color:var(--navy);font-size:16px}
+
+/* Top navigation */
+.topbar{background:var(--boat-white);border-bottom:1px solid var(--gray)}
+.container{max-width:var(--max-width);margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center}
+.logo-link img{height:56px;width:56px;object-fit:cover;border-radius:50%}
+nav{display:flex;align-items:center}
+nav a{color:var(--navy);text-decoration:none;font-size:14px}
+nav .nav-left{display:flex;gap:18px}
+nav .nav-right{margin-left:auto;display:flex;gap:18px;align-items:center}
+
+/* Hero and notice bar */
+.hero{height:320px;background:linear-gradient(135deg,var(--navy) 10%, rgba(47,93,74,0.85) 100%);display:flex;align-items:center;justify-content:center;color:var(--boat-white);position:relative;padding:28px 0 20px}
+.hero .hero-inner{max-width:var(--max-width);text-align:center}
+.hero .icon{width:88px;height:88px;border-radius:50%;background:var(--ocean);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 6px 18px rgba(31,47,69,0.25)}
+.hero h1{margin:0;font-size:48px;font-weight:700;line-height:1.05}
+.hero p{margin:10px 0 0;font-size:18px;color:rgba(248,249,250,0.95)}
+
+.notice-wrap{display:flex;justify-content:center;margin-top:18px;position:relative;z-index:2;padding:0 26px}
+.notice{background:var(--ocean);color:var(--boat-white);padding:14px 26px;border-radius:8px;width:100%;box-sizing:border-box;text-align:center;font-size:15px;box-shadow:0 6px 18px rgba(31,47,69,0.08);position:relative}
+
+/* Responsive */
+@media (max-width:900px){
+  .card-grid{flex-direction:column}
+  .card-right{width:100%}
+  .logo-link img{height:44px;width:44px}
+}
+
+/* Utility */
+.btn{font-weight:700;border-radius:8px;padding:10px 16px;cursor:pointer;border:1px solid transparent}
+:root {
+  --navy: #1F2F45;
+  --cream: #F2E6C9;
+  --white: #ffffff;
+  --blue: #3F87A6;
+  --boat-white: #F8F9FA;
+  --ocean: #3F87A6;
+  --pine: #2F5D4A;
+  --coral: #E8896B;
+  --max-width: 1100px;
+  --gold: #F4C26B;
+  --gray: #D8DEE4;
+}
+
+/* RESET */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--navy);
+  background: #fff;
+}
+
+.container {
+  width: 1100px;
+  max-width: 92%;
+  margin: auto;
+}
+
+/* ================= HEADER ================= */
+/* Use the BlueTeam_LoginPage header styles for exact parity */
+.topbar{background:var(--boat-white);border-bottom:1px solid var(--gray)}
+.container{max-width:var(--max-width);margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center}
+.logo-link img{height:56px;width:56px;object-fit:cover;border-radius:50%}
+nav{display:flex;align-items:center}
+nav a{color:var(--navy);text-decoration:none;font-size:14px}
+/* left and right groups inside nav; right group pushed using margin-left */
+nav .nav-left{display:flex;gap:18px}
+nav .nav-right{margin-left:auto;display:flex;gap:18px;align-items:center}
+/* ensure spacing between last left link and the account links */
+nav .nav-left a:last-child{margin-right:18px}
+
+/* Force consistent header spacing across all pages */
+header.topbar.site-header{padding:0}
+.topbar .container{padding-top:12px;padding-bottom:12px}
+.topbar + .hero{margin-top:0}
+
+/* ================= HERO ================= */
+.hero {
+  position: relative;
+  height: 520px;
+  display: flex;
+  /* Use multiple fallbacks for the hero background so the image loads from several common locations. */
+  background-image: url('marina.png'), url('Images/hero.png'), url('/marina.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--navy);
+  /* Prefer the project-provided marina image; fall back to Images/hero.png */
+  background-image: url('marina.png'), url('Images/hero.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero h1 {
+  font-size: 52px;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 18px;
+  margin-bottom: 25px;
+}
+
+.hero-actions{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  margin-top:12px;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  margin: 0 6px;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: #111;
+}
+
+.btn-outline {
+  border: 2px solid white;
+  color: white;
+}
+
+/* Ensure the hero's outline button always displays a clear themed border
+   and matches the site's color scheme regardless of cascade order. */
+.hero .btn-outline,
+.hero-actions .btn-outline{
+  border: 2px solid var(--boat-white);
+  color: var(--boat-white); /* keep text white */
+  background: transparent;
+  box-shadow: none;
+}
+.hero .btn-outline:hover,
+.hero-actions .btn-outline:hover{
+  background: rgba(244,194,107,0.08); /* subtle gold hover */
+}
+
+.btn-secondary {
+  background: var(--blue);
+  color: white;
+}
+
+.btn-outline-dark {
+  border: 2px solid var(--blue);
+  color: var(--blue);
+}
+
+/* Index-only: make the bottom Contact Us button stand out with the site's ocean blue */
+.btn.contact-outline-index {
+  border: 2px solid var(--ocean) !important;
+  color: var(--ocean) !important;
+  background: transparent !important;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn.contact-outline-index:hover {
+  background: rgba(63,135,166,0.06);
+}
+
+/* BlueTeam button variants (ensure 'btn ghost' etc match canonical page) */
+.btn{font-weight:700;border-radius:8px;padding:10px 16px;cursor:pointer;border:1px solid transparent}
+.btn.login{background:var(--ocean);color:var(--boat-white);border-color:var(--ocean);padding:12px 18px}
+.btn.create{background:var(--gold);color:var(--navy);border-color:var(--gold);padding:12px 18px}
+.btn.ghost{background:transparent;color:var(--ocean);border:1px solid var(--ocean)}
+
+/* ================= FEATURES ================= */
+.features {
+  padding: 50px 0;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.feature-card {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+/* ================= CTA ================= */
+.cta {
+  background: var(--navy);
+  color: white;
+  text-align: center;
+  padding: 70px 20px;
+}
+
+.cta h2 {
+  color: var(--cream);
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+/* ================= HELP ================= */
+.help {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.site-footer {
+  text-align: center;
+  padding: 16px;
+  border-top: 1px solid var(--gray);
+}
+
+
+/* Add space between text and buttons */
+.cta p {
+  margin-bottom: 32px;
+}
+
+.help p {
+  margin-bottom: 28px;
+}
+
+/* ================= SLIP RESERVATION PAGE ================= */
+
+.page-header {
+  text-align: center;
+  margin: 40px 0 20px;
+}
+
+.page-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.page-reservation .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px 50px;
+}
+
+.page-reservation .form-actions {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.page-reservation .reservation-page {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px 80px;
+  background: var(--boat-white);
+}
+
+.page-reservation .reservation-card {
+  width: 100%;
+  max-width: 900px;
+  background: white;
+  border-radius: 12px;
+  padding: 35px 40px;
+  box-shadow: 0 10px 25px rgba(31,47,69,0.08);
+}
+
+.page-reservation .btn-primary {
+  display: inline-block;
+  width: auto;
+}
+
+.page-reservation .electric-note {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--navy);
+  margin-top: 30px;
+}
+
+.page-reservation .electric-note span {
+  background: var(--boat-white);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--gray);
+}
+
+.page-reservation .form-note-inline {
+  background: var(--boat-white);
+  border: 1px solid var(--gray);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  height: 42px; 
+}
+
+.page-reservation .form-actions {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.alert {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 14px 18px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.alert.success {
+  background: rgba(47, 93, 74, 0.12);
+  color: var(--pine);
+}
+
+.alert.error {
+  background: rgba(232, 137, 107, 0.15);
+  color: var(--coral);
+}
+
+/* ---------- GRID LAYOUT (Clean Version) ---------- */
+
+.page-reservation .start-date {
+  grid-column: 1;
+}
+
+.page-reservation .end-date {
+  grid-column: 2;
+}
+
+.page-reservation .slip-size {
+  grid-column: 1;
+}
+
+.page-reservation .select-boat {
+  grid-column: 2;
+}
+
+.page-reservation .add-boat {
+  grid-column: 1;
+}
+
+.page-reservation .electric-hookup {
+  grid-column: 2;
+}
+
+/* ---------- ADD BOAT FIELD STYLING ---------- */
+
+.page-reservation .add-boat-fields {
+  display: flex;
+  gap: 12px;
+}
+
+.page-reservation .add-boat-fields input {
+  flex: 1;
+}
+
+
+/* ---------- BUTTON ROW ---------- */
+
+.page-reservation .form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
