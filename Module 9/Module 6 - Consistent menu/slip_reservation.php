@@ -44,6 +44,10 @@ if (!empty($_GET['reset_reservation'])) {
   // clear any cached availability data so a fresh page shows
   if (isset($_SESSION['available_slips'])) unset($_SESSION['available_slips']);
   if (isset($_SESSION['reservation_data'])) unset($_SESSION['reservation_data']);
+  // Ensure browser does not serve cached form state, then redirect to fresh page
+  header('Cache-Control: no-store, no-cache, must-revalidate');
+  header('Pragma: no-cache');
+  header('Expires: 0');
   // Redirect to remove query param and render fresh page
   header('Location: slip_reservation.php');
   exit();
@@ -139,6 +143,11 @@ $slipSize  = "";
 $boatID    = "";
 $newBoatName   = "";
 $newBoatLength = "";
+
+// Reservation confirmation flags: when a reservation is successfully created
+// we set `$reservationConfirmed` and provide `$reservationSummary` for rendering
+$reservationConfirmed = false;
+$reservationSummary = null;
 
 // Flash message: show once after redirect, then clear
 if (!empty($_SESSION['boat_success'])) {
@@ -688,13 +697,44 @@ if (isset($_POST['confirm_reservation'])) {
             }
 
             if ($reservationId) {
-              // store reservation summary in session for the summary page to display
+              // store reservation summary in session for later access
+              // capture a snapshot of the chosen slip so the confirmation can show
+              $snapName = '';
+              $snapLocation = '';
+              $snapSize = '';
+              if (!empty($_SESSION['available_slips'])) {
+                foreach ($_SESSION['available_slips'] as $as) {
+                  if ((string)($as['id'] ?? '') === (string)$availableSlip) {
+                    $snapName = $as['name'] ?? '';
+                    $snapLocation = $as['location_code'] ?? '';
+                    $snapSize = $as['size'] ?? $as['slip_size'] ?? '';
+                    break;
+                  }
+                }
+              }
+              // fallback DB lookup if session snapshot not available
+              if (empty($snapName) && !empty($availableSlip) && isset($pdo)) {
+                try {
+                  $sstmt = $pdo->prepare("SELECT name, location_code, slip_size, size FROM slips WHERE slip_ID = :id OR id = :id OR slip_id = :id LIMIT 1");
+                  $sstmt->execute([':id' => $availableSlip]);
+                  $srow = $sstmt->fetch(PDO::FETCH_ASSOC);
+                  if ($srow) {
+                    $snapName = $srow['name'] ?? '';
+                    $snapLocation = $srow['location_code'] ?? '';
+                    $snapSize = $srow['slip_size'] ?? $srow['size'] ?? '';
+                  }
+                } catch (Exception $e) { }
+              }
+
               $_SESSION['reservation_data'] = [
                 'reservation_id' => $reservationId,
                 'confirmation_number' => $confirmationNumber,
                 'user_ID'    => $userID,
                 'boat_ID'    => $boatID,
                 'slip_ID'    => $availableSlip,
+                'slip_name'  => $snapName,
+                'slip_location_code' => $snapLocation,
+                'slip_size'  => $snapSize,
                 'start_date' => $startDate,
                 'end_date'   => $endDate,
                 'months_duration' => intval($months),
@@ -704,8 +744,11 @@ if (isset($_POST['confirm_reservation'])) {
               if (isset($_SESSION['available_slips'])) unset($_SESSION['available_slips']);
               // store last reservation id for convenience
               $_SESSION['last_reservation_id'] = $reservationId;
-              header("Location: reservation_summary.php");
-              exit();
+
+              // Instead of redirecting to reservation_summary.php, render an inline
+              // confirmation panel on this page that replicates Step 3 information.
+              $reservationConfirmed = true;
+              $reservationSummary = $_SESSION['reservation_data'];
             }
 
         } else {
@@ -1322,7 +1365,7 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
   <style>
     /* Reservation step tracker used inside the notice bar (page-local) */
     .reservation-steps{display:flex;flex-direction:column;align-items:center}
-    .reservation-steps .steps-row{display:flex;align-items:center;width:100%;max-width:980px;margin:0 auto;padding:0 12px;box-sizing:border-box}
+    .reservation-steps .steps-row{display:flex;align-items:center;justify-content:center;width:100%;max-width:980px;margin:0 auto;padding:0 12px;box-sizing:border-box}
     .reservation-steps .step{display:flex;flex-direction:column;align-items:center;flex:0 0 auto}
     .reservation-steps .step .step-circle{width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);background:#e6eef4}
     /* Active step: inverted / cream palette to stand out against ocean background */
@@ -1478,20 +1521,27 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
     <div class="notice">
       <div class="reservation-steps">
         <div class="steps-row">
-          <div class="step active">
-            <span class="step-circle">1</span>
-            <div class="step-label">Dates &amp; Boat</div>
-          </div>
-          <div class="connector" aria-hidden="true"></div>
-          <div class="step">
-            <span class="step-circle">2</span>
-            <div class="step-label">Select Slip</div>
-          </div>
-          <div class="connector" aria-hidden="true"></div>
-          <div class="step">
-            <span class="step-circle">3</span>
-            <div class="step-label">Review &amp; Confirm</div>
-          </div>
+          <?php if (!empty($reservationConfirmed)): ?>
+            <div class="step active">
+              <span class="step-circle">✓</span>
+              <div class="step-label">Confirmation</div>
+            </div>
+          <?php else: ?>
+            <div class="step active">
+              <span class="step-circle">1</span>
+              <div class="step-label">Dates &amp; Boat</div>
+            </div>
+            <div class="connector" aria-hidden="true"></div>
+            <div class="step">
+              <span class="step-circle">2</span>
+              <div class="step-label">Select Slip</div>
+            </div>
+            <div class="connector" aria-hidden="true"></div>
+            <div class="step">
+              <span class="step-circle">3</span>
+              <div class="step-label">Review &amp; Confirm</div>
+            </div>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -1507,6 +1557,94 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
   <div class="alert alert-success"><?= $boatSuccess ?></div>
 <?php endif; ?>
 
+<?php if (!empty($reservationConfirmed) && !empty($reservationSummary)): ?>
+  <div class="alert alert-success">Reservation successful — confirmation #: <strong><?= htmlspecialchars($reservationSummary['confirmation_number'] ?? '') ?></strong></div>
+  <div class="reservation-confirmation" style="border:1px solid #e6f2ef;padding:16px;border-radius:8px;margin-bottom:12px;background:#f7fffb">
+    <h3 style="margin-top:0;margin-bottom:6px;text-align:center;">Reservation Confirmed</h3>
+    <?php
+      // Format dates for display
+      $fmtStart = $reservationSummary['start_date'] ?? '';
+      $fmtEnd = $reservationSummary['end_date'] ?? '';
+      try { $d1 = DateTime::createFromFormat('Y-m-d', $fmtStart); if ($d1) $fmtStart = $d1->format('F j, Y'); } catch (Exception $e){}
+      try { $d2 = DateTime::createFromFormat('Y-m-d', $fmtEnd); if ($d2) $fmtEnd = $d2->format('F j, Y'); } catch (Exception $e){}
+
+      // Boat label
+      $boatLabel = '';
+      foreach ($userBoats as $b) {
+        if ((string)($b['boat_ID'] ?? $b['boat_id'] ?? '') === (string)($reservationSummary['boat_ID'] ?? '')) {
+          $boatLabel = htmlspecialchars($b['boat_name'] ?? $b['name'] ?? '') . ' (' . intval($b['boat_length'] ?? $b['length_ft'] ?? 0) . ' ft)';
+          break;
+        }
+      }
+
+      // Slip label: prefer snapshot stored with reservation, then session cache, then DB
+      $slipLabel = '';
+      $slipLength = '';
+      if (!empty($reservationSummary['slip_location_code'])) {
+        $slipLabel = htmlspecialchars($reservationSummary['slip_location_code']);
+        $slipLength = intval($reservationSummary['slip_size'] ?? 0);
+      }
+      // fallback to stored slip name
+      if (empty($slipLabel) && !empty($reservationSummary['slip_name'])) {
+        $slipLabel = htmlspecialchars($reservationSummary['slip_name']);
+        if (empty($slipLength)) $slipLength = intval($reservationSummary['slip_size'] ?? 0);
+      }
+      // fallback to session available_slips
+      $sid = $reservationSummary['slip_ID'] ?? null;
+      if (empty($slipLabel) && !empty($_SESSION['available_slips']) && $sid) {
+        foreach ($_SESSION['available_slips'] as $as) {
+          if ((string)($as['id'] ?? '') === (string)$sid) {
+            if (!empty($as['location_code'])) $slipLabel = htmlspecialchars($as['location_code']);
+            $slipLength = intval($as['size'] ?? $as['slip_size'] ?? 0);
+            if (empty($slipLabel) && !empty($as['name'])) $slipLabel = htmlspecialchars($as['name']);
+            break;
+          }
+        }
+      }
+      // final fallback: DB lookup
+      if (empty($slipLabel) && !empty($sid) && isset($pdo)) {
+        try {
+          $sstmt = $pdo->prepare("SELECT name, location_code, slip_size, size FROM slips WHERE slip_ID = :id OR id = :id OR slip_id = :id LIMIT 1");
+          $sstmt->execute([':id' => $sid]);
+          $srow = $sstmt->fetch(PDO::FETCH_ASSOC);
+          if ($srow) {
+            $slipLabel = htmlspecialchars($srow['location_code'] ?? $srow['name'] ?? ('Slip ' . $sid));
+            $slipLength = intval($srow['slip_size'] ?? $srow['size'] ?? 0);
+          }
+        } catch (Exception $e) { /* ignore */ }
+      }
+    ?>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start">
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:nowrap;justify-content:center;width:100%">
+        <div style="flex:0 0 220px;text-align:center">
+          <div style="font-weight:700">Boat</div>
+          <div><?= $boatLabel ?: htmlspecialchars($reservationSummary['boat_ID'] ?? '') ?></div>
+        </div>
+
+        <div style="flex:0 0 auto;min-width:220px;display:flex;justify-content:center;align-items:center;gap:28px">
+          <div style="text-align:center;white-space:nowrap">
+            <div style="font-weight:700">Slip</div>
+            <div><?= $slipLabel ?><?php if (!empty($slipLength)) echo ' (' . intval($slipLength) . ' ft)'; ?></div>
+          </div>
+          <div style="text-align:center;white-space:nowrap">
+            <div style="font-weight:700">Dates</div>
+            <div><?= htmlspecialchars($fmtStart) ?> — <?= htmlspecialchars($fmtEnd) ?></div>
+          </div>
+        </div>
+
+        <div style="flex:0 0 180px;min-width:160px;text-align:center">
+          <div style="font-weight:700">Total</div>
+          <div>$<?= number_format($reservationSummary['total_cost'] ?? 0, 2) ?></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;justify-content:center;gap:8px">
+      <a href="reservation_summary.php" class="btn" style="background:#3F87A6;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block">Your Reservations</a>
+      <a href="slip_reservation.php?reset_reservation=1" class="btn" style="background:transparent;border:1px solid #3F87A6;color:#3F87A6;padding:10px 14px;border-radius:6px;text-decoration:none;display:inline-block">Make another reservation</a>
+    </div>
+  </div>
+<?php endif; ?>
+
 <?php // availability messages are handled client-side; suppress server-side duplicate rendering to avoid stale notices on reload ?>
 
 <?php /* Removed duplicate Estimated Total alert — use the reservation-cost card only */ ?>
@@ -1515,6 +1653,7 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
 
     <!-- notice moved above the card to overlap hero (see top of file) -->
 
+  <?php if (empty($reservationConfirmed)): ?>
     <form id="reservationForm" method="POST" class="reservation-form">
 
       <div class="form-grid">
@@ -1705,7 +1844,8 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
       </div>
 
     <!-- Move actions outside the form so it's absolutely positioned relative to the card -->
-</form>
+  </form>
+<?php endif; ?>
 
     <!-- external actions removed: button now lives inside the reservation-cost block -->
 
@@ -2419,7 +2559,9 @@ window.addEventListener('pageshow', function(e){
                 slipSection.appendChild(slipLab);
                 const slipInfo = document.createElement('div'); slipInfo.style.marginBottom = '6px';
                 const slipLoc = document.createElement('div'); slipLoc.className='value'; slipLoc.textContent = loc || 'n/a'; slipInfo.appendChild(slipLoc);
-                const slipSizeEl = document.createElement('div'); slipSizeEl.className='value'; slipSizeEl.style.marginTop='6px'; slipSizeEl.textContent = 'Size: ' + (sizeVal || ''); slipInfo.appendChild(slipSizeEl);
+                if (sizeVal && String(sizeVal).trim() !== '') {
+                  const slipSizeLine = document.createElement('div'); slipSizeLine.className = 'value'; slipSizeLine.style.marginTop = '6px'; slipSizeLine.textContent = String(sizeVal) + ' ft'; slipInfo.appendChild(slipSizeLine);
+                }
                 slipSection.appendChild(slipInfo);
                 // dates (placed under slip info inside the right column)
                 const startFriendly = formatFriendlyDate(start);
@@ -2825,7 +2967,9 @@ window.addEventListener('pageshow', function(e){
                     slipSection.appendChild(slipLab);
                     const slipInfo = document.createElement('div'); slipInfo.style.marginBottom = '6px';
                     const slipLoc = document.createElement('div'); slipLoc.className='value'; slipLoc.textContent = loc || 'n/a'; slipInfo.appendChild(slipLoc);
-                    const slipSizeEl = document.createElement('div'); slipSizeEl.className='value'; slipSizeEl.style.marginTop='6px'; slipSizeEl.textContent = 'Size: ' + (sizeVal || ''); slipInfo.appendChild(slipSizeEl);
+                    if (sizeVal && String(sizeVal).trim() !== '') {
+                      const slipSizeLine = document.createElement('div'); slipSizeLine.className = 'value'; slipSizeLine.style.marginTop = '6px'; slipSizeLine.textContent = String(sizeVal) + ' ft'; slipInfo.appendChild(slipSizeLine);
+                    }
                     slipSection.appendChild(slipInfo);
                     // dates (placed under slip info inside the right column)
                     const startFriendly = formatFriendlyDate(start);

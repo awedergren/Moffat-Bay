@@ -130,8 +130,8 @@ $passwordError = false;
   $changePw = isset($_POST['change_password']) && $_POST['change_password'] === '1';
   $boat_action = $_POST['boat_action'] ?? '';
 
-  // When adding a boat while logged in we don't require the email field to be re-submitted
-  if ($boat_action !== 'add' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+  // When adding/editing/deleting a boat while logged in we don't require the email field to be re-submitted
+  if (!in_array($boat_action, ['add','edit','delete']) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $err = 'Please provide a valid email address.';
   } else {
     try {
@@ -411,28 +411,62 @@ $passwordError = false;
           header('Location: MyAccount.php?saved=1'); exit;
         }
 
+        
+
         if ($boat_action === 'delete') {
           $boat_id = intval($_POST['boat_id'] ?? 0);
           if ($boat_id <= 0) throw new Exception('Invalid boat selected.');
-          if (!empty($colBoatId) && !empty($colUserId)) {
-            $resolvedUid = $userId;
-            if (empty($resolvedUid)) {
-              $s = $pdo->prepare('SELECT user_ID FROM users WHERE email = :email LIMIT 1');
-              $s->execute([':email' => $current['email'] ?? $userEmail]);
-              $r = $s->fetch(PDO::FETCH_ASSOC);
-              if ($r && !empty($r['user_ID'])) $resolvedUid = intval($r['user_ID']);
+
+          // Ensure the boat exists and belongs to the current user before deleting
+          $detectedBoatIdCol = $colBoatId ?? 'boat_ID';
+          try {
+            $br = $pdo->prepare("SELECT * FROM boats WHERE {$detectedBoatIdCol} = :bid LIMIT 1");
+            $br->execute([':bid' => $boat_id]);
+            $boatRow = $br->fetch(PDO::FETCH_ASSOC);
+          } catch (Exception $e) {
+            $boatRow = false;
+          }
+          if (!$boatRow) throw new Exception('Boat not found.');
+
+          // Ownership check: prefer numeric user id column when available
+          $owns = false;
+          if (!empty($colUserId) && array_key_exists($colUserId, $boatRow)) {
+            $boatOwner = $boatRow[$colUserId];
+            $currentUid = $current['user_ID'] ?? $current['id'] ?? $current['user_id'] ?? null;
+            if (!empty($currentUid) && intval($boatOwner) === intval($currentUid)) $owns = true;
+            // If boat owner is stored as email, compare with current email as fallback
+            if (!$owns && filter_var($boatOwner, FILTER_VALIDATE_EMAIL) && !empty($current['email']) && $boatOwner === $current['email']) $owns = true;
+          } else {
+            // Fallback: try matching by any email-like column on the boats row
+            foreach (['owner_email','user_email','email'] as $ec) {
+              if (array_key_exists($ec, $boatRow) && !empty($boatRow[$ec]) && !empty($current['email']) && $boatRow[$ec] === $current['email']) { $owns = true; break; }
             }
-            if (!empty($resolvedUid)) {
+          }
+          if (!$owns) throw new Exception('You do not have permission to delete this boat.');
+
+          // Perform the delete (prefer restricting by owner when possible)
+          $logParts = [];
+          $logParts[] = '['.date('c').'] boat_delete attempt boat_id=' . $boat_id . ' user_id=' . ($current['user_ID'] ?? $current['id'] ?? $userId ?? 'null');
+          try {
+            if (!empty($colBoatId) && !empty($colUserId) && !empty($currentUid)) {
               $sql = "DELETE FROM boats WHERE {$colBoatId} = :bid AND {$colUserId} = :uid";
               $del = $pdo->prepare($sql);
-              $del->execute([':bid'=>$boat_id, ':uid'=>$resolvedUid]);
+              $del->execute([':bid'=>$boat_id, ':uid'=>$currentUid]);
+              $logParts[] = 'sql=' . $sql;
             } else {
-              $del = $pdo->prepare('DELETE FROM boats WHERE ' . ($colBoatId ?? 'boat_ID') . ' = :bid');
+              $sql = 'DELETE FROM boats WHERE ' . ($colBoatId ?? 'boat_ID') . ' = :bid';
+              $del = $pdo->prepare($sql);
               $del->execute([':bid'=>$boat_id]);
+              $logParts[] = 'sql=' . $sql;
             }
-          } else {
-            $del = $pdo->prepare('DELETE FROM boats WHERE ' . ($colBoatId ?? 'boat_ID') . ' = :bid');
-            $del->execute([':bid'=>$boat_id]);
+            $affected = $del->rowCount();
+            $logParts[] = 'affected=' . intval($affected);
+            // write debug log (do not log passwords)
+            @file_put_contents(__DIR__ . '/MyAccount_debug.log', implode(' | ', $logParts) . "\n", FILE_APPEND | LOCK_EX);
+            if ($affected === 0) throw new Exception('Boat deletion failed.');
+          } catch (Exception $ex) {
+            @file_put_contents(__DIR__ . '/MyAccount_debug.log', '['.date('c').'] boat_delete error: ' . $ex->getMessage() . "\n", FILE_APPEND | LOCK_EX);
+            throw $ex;
           }
           header('Location: MyAccount.php?saved=1'); exit;
         }
