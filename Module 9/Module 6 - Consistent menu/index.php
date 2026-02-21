@@ -86,10 +86,24 @@ $loggedIn = isset($_SESSION['username']);
   <a class="btn btn-outline-dark contact-outline-index" href="about.php#contact">Contact Us</a>
 </section>
 
+<!-- ================= FOOTER ACCENT ================= -->
+<div class="footer-accent-wrap" aria-hidden="true">
+  <img src="SalishSalmonCoralAll.png" alt="Salish Salmon Coral seal" class="footer-accent-img" width="120" height="60" loading="lazy">
+</div>
+
 <!-- ================= FOOTER ================= -->
 <footer class="site-footer">
   <p>&copy; 2026 Moffat Bay Island Marina</p>
 </footer>
+
+<style>
+  /* Page-scoped footer image styling to keep the layout cohesive */
+  .footer-accent-wrap { display:flex; justify-content:center; align-items:center; padding:12px 0 28px; }
+  .site-footer { display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 0 }
+  .footer-accent-img{height:140px;width:auto;opacity:0.95;display:block}
+  @media(max-width:900px){ .footer-accent-img{height:110px} }
+  @media(max-width:420px){ .footer-accent-img{height:80px} }
+</style>
 
 </body>
 </html>
