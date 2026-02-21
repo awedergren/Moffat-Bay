@@ -1499,6 +1499,16 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
       padding-left: 0 !important;
       padding-right: 0 !important;
     }
+    /* Page-scoped sticky/footer spacing: make this page a column flex container
+       and allow the page body to grow so the footer is pushed to the bottom. */
+    body.page-reservation {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    body.page-reservation .page-body { flex: 1 0 auto; display:flex; flex-direction:column; }
+    body.page-reservation .page-body main.reservation-page { flex: 1 0 auto; }
+    body.page-reservation .site-footer { flex-shrink: 0; }
   </style>
 </head>
 
@@ -1516,6 +1526,12 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
   <!-- Page-level overrides removed to preserve consistent nav/footer sizing. -->
 
 <!-- Frame to align notice and reservation card exactly (fluid up to 1000px) -->
+<div class="page-body">
+  <style>
+    /* Page-scoped: ensure footer sits at bottom on short pages */
+    .page-body { min-height: 100vh; display: flex; flex-direction: column; }
+    .page-body > main.reservation-page { flex: 1 1 auto; }
+  </style>
 <div class="reservation-frame">
   <div class="notice-wrap">
     <div class="notice">
@@ -1546,6 +1562,7 @@ $user_full = trim(($user_first ? $user_first : '') . ' ' . ($user_last ? $user_l
       </div>
     </div>
   </div>
+<!-- page-body opened above to contain reservation-frame + main -->
 <main class="reservation-page">
 <section class="reservation-card" style="position:relative;padding-bottom:9px;">
 
@@ -3178,6 +3195,7 @@ window.addEventListener('pageshow', function(e){
 </script>
 
 <?php include 'footer.php'; ?>
+</div>
 <script>
 // Make marina map slips interactive: delegated click + keyboard support and dynamic enhancement
 (function(){

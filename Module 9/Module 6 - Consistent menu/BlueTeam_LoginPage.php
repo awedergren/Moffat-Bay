@@ -176,6 +176,16 @@ foreach ($dbPaths as $dbPath) {
     /* Final overrides to equalize spacing above and below the notice */
     .notice-wrap{margin-top:24px !important}
     .card-wrap{margin-top:12px !important}
+    /* Page-only sticky footer for this login page (scoped here only) */
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    /* page-body will contain the main content and grow to push footer */
+    body .page-body { flex: 1 0 auto; display:flex; flex-direction:column; }
+    body .page-body main { flex: 1 0 auto; }
+    .site-footer { flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -214,6 +224,7 @@ foreach ($dbPaths as $dbPath) {
     }
   </style>
 
+  <div class="page-body">
   <div class="content">
     <div class="notice-wrap">
       <?php
@@ -292,6 +303,7 @@ foreach ($dbPaths as $dbPath) {
       </div>
       </div>
     </main>
+  </div>
   </div>
 
   <script>

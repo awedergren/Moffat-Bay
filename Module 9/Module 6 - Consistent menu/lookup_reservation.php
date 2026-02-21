@@ -1,4 +1,12 @@
 <?php
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 18, 2026
+Project: Moffat Bay Marina Project
+File: lookup_reservation.php
+Purpose: Lookup reservation page and wait list status.
+Non-executing header only; does not affect page behavior or layout.
+*/
 // Lookup Reservation Page
 require_once __DIR__ . '/nav.php';
 require_once __DIR__ . '/db.php';

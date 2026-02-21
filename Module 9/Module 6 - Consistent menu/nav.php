@@ -53,7 +53,7 @@ $loggedIn = isset($_SESSION['username']) || isset($_SESSION['user_id']);
         <?php else: ?>
           <a href="reservation_info.php">Reservations</a>
         <?php endif; ?>
-        <a href="lookup_reservation.php">Reservation/Waitlist Lookup</a>
+        <a href="look_up.php">Reservation/Waitlist Lookup</a>
         <?php if ($loggedIn): ?>
           <a href="MyAccount.php">My Account</a>
         <?php endif; ?>

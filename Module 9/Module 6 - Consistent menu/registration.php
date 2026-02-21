@@ -225,8 +225,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     /* Force-notice visible if other CSS creates stacking contexts */
     .notice { display:block !important; z-index:100000; position:relative }
     @media (max-width:900px){ .notice-wrap{margin-top:18px !important} .card-grid{max-width:100%;gap:16px} .form-card,.info-column{flex:0 0 100% !important;width:100% !important} }
+      /* Page-scoped sticky footer for registration page only */
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      body .page-body { flex: 1 0 auto; display:flex; flex-direction:column; }
+      body .page-body main.registration-layout { flex: 1 0 auto; }
+      .site-footer { flex-shrink: 0; }
   </style>
 
+  <div class="page-body">
   <div class="content">
   <div class="notice-wrap">
     <div class="notice">
@@ -334,6 +344,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   </main>
   </div>
+</div>
 
 <script>
 // Auto-format phone input as XXX-XXX-XXXX while typing
