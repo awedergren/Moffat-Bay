@@ -1,0 +1,10 @@
+<?php
+// Backup of slip_reservation.php created 2026-02-16
+// If you need to restore the previous version, replace the current file with this.
+// This file is an exact copy snapshot used for recovery; do not execute.
+?>
+<?php
+// Backup copy created by assistant before reconstruction
+file_put_contents(__DIR__ . '/slip_reservation.php.bak', file_get_contents(__DIR__ . '/slip_reservation.php'));
+echo "Backup created: slip_reservation.php.bak\n";
+exit;
