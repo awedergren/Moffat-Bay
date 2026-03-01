@@ -1,0 +1,80 @@
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 18, 2026
+Project: Moffat Bay Marina Project
+File: lookup_reservation.css
+Purpose: Lookup reservation page styles. Non-executing header only.
+*/
+
+body {
+font-family: Arial, Helvetica, sans-serif;
+margin: 0;
+padding: 0;
+background: #f8f9fb;
+color: #222;
+}
+.container {
+max-width: 820px;
+margin: 28px auto;
+padding: 18px;
+background: #fff;
+border-radius: 6px;
+box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+.center { text-align: center; }
+.lookup form {
+display: grid;
+grid-template-columns: 1fr;
+gap: 10px;
+margin: 12px 0 18px;
+}
+.lookup label { font-weight: 600; }
+.lookup input[type="email"],
+.lookup input[type="text"] {
+padding: 10px;
+border: 1px solid #cfd8e3;
+border-radius: 4px;
+width: 100%;
+box-sizing: border-box;
+}
+.or {
+text-align: center;
+font-weight: 700;
+color: #666;
+margin: 6px 0;
+}
+.btn {
+background: #2b6fb0;
+color: #fff;
+border: none;
+padding: 10px 14px;
+border-radius: 4px;
+cursor: pointer;
+width: 140px;
+justify-self: start;
+}
+.btn:hover { background: #245a8b; }
+.message.error {
+margin: 12px 0;
+padding: 10px;
+background: #ffecec;
+color: #a33;
+border: 1px solid #f0bcbc;
+border-radius: 4px;
+}
+.results {
+margin-top: 18px;
+padding: 12px;
+border: 1px solid #e6eef8;
+background: #fbfdff;
+border-radius: 4px;
+}
+.results p { margin: 6px 0; }
+.note { margin-top: 16px; color: #666; font-size: 0.95rem; }
+/* Ensure footer matches global site footer on this page only */
+.site-footer{
+	text-align: center;
+	padding: 16px;
+	border-top: 1px solid var(--gray);
+	background: transparent;
+}

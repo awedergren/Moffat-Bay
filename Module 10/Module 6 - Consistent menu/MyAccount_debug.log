@@ -1,0 +1,2 @@
+[2026-02-20T00:30:54+01:00] boat_delete attempt boat_id=18 user_id=6 | sql=DELETE FROM boats WHERE boat_ID = :bid AND user_ID = :uid | affected=1
+[2026-02-20T00:31:11+01:00] boat_delete attempt boat_id=17 user_id=6 | sql=DELETE FROM boats WHERE boat_ID = :bid AND user_ID = :uid | affected=1

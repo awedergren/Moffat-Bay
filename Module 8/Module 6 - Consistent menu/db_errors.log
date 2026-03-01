@@ -1,0 +1,19 @@
+[2026-02-12 20:45:40] LoginHandler current DB: moffat_bay
+[2026-02-12 20:45:40] DB prepare error: SQLSTATE[HY000]: General error: 1005 Can't create table `moffat_bay`.`users` (errno: 165 "Table is read only")
+[2026-02-12 20:47:45] LoginHandler current DB: moffat_bay
+[2026-02-12 20:47:45] DB prepare error: SQLSTATE[HY000]: General error: 1005 Can't create table `moffat_bay`.`users` (errno: 165 "Table is read only")
+[2026-02-12 22:09:37] LoginHandler current DB: moffat_bay
+[2026-02-12 22:09:37] DB prepare error: SQLSTATE[HY000]: General error: 1005 Can't create table `moffat_bay`.`users` (errno: 165 "Table is read only")
+[2026-02-13 03:26:43] LoginHandler current DB: moffat_bay
+[2026-02-13 03:27:52] LoginHandler current DB: moffat_bay
+[2026-02-13 03:29:35] LoginHandler current DB: moffat_bay
+[2026-02-13 03:44:23] LoginHandler current DB: moffat_bay
+[2026-02-14 03:39:01] LoginHandler current DB: moffat_bay
+[2026-02-14 03:49:31] LoginHandler current DB: moffat_bay
+[2026-02-14 19:10:09] LoginHandler current DB: moffat_bay
+[2026-02-14 19:10:22] LoginHandler current DB: moffat_bay
+[2026-02-15 12:32:24] LoginHandler current DB: moffat_bay
+[2026-02-15 15:07:57] LoginHandler current DB: moffat_bay
+[2026-02-15 18:02:12] LoginHandler current DB: moffat_bay
+[2026-02-15 22:25:47] LoginHandler current DB: moffat_bay
+[2026-02-15 23:38:19] LoginHandler current DB: moffat_bay

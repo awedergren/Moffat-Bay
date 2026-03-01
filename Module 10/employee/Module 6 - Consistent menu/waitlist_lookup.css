@@ -1,0 +1,70 @@
+/*
+Blue Team: Jonah Aney, Justin Marucci, Nardos Gabremedhin, Amanda Wedergren
+Date: February 18, 2026
+Project: Moffat Bay Marina Project
+File: waitlist_lookup.css
+Purpose: Waitlist lookup page styles. Non-executing header only.
+*/
+
+/* Center the radio options and make them look like buttons */
+.form-lookup .search-type{display:flex;justify-content:center;gap:12px;margin-bottom:18px}
+.form-lookup .search-type label{display:inline-flex;align-items:center;padding:8px 12px;border-radius:8px;border:1px solid rgba(31,47,69,0.06);background:transparent;cursor:pointer;font-weight:700}
+.form-lookup .search-type input[type="radio"]{margin-right:8px}
+
+/* Input and button centered with consistent width */
+.form-lookup .form-row{display:flex;justify-content:center;margin-bottom:14px}
+.form-lookup .input-text{width:100%;max-width:560px;padding:12px 14px;border-radius:8px;border:1px solid rgba(31,47,69,0.08);box-sizing:border-box;font-size:15px}
+
+/* CTA styling */
+.form-lookup .cta{display:inline-block;background:#2b6f6b;color:#fff;padding:12px 22px;border-radius:10px;border:0;font-weight:800;cursor:pointer}
+
+/* Error and results spacing */
+.error-message{display:block;margin:14px auto;padding:10px 14px;max-width:760px;text-align:center;border-radius:6px;background:#fff6f6;color:#8a0000}
+.reservation-details{max-width:760px;margin:18px auto;padding:16px;border-radius:10px;border:1px solid rgba(31,47,69,0.04);background:#fff}
+.reservation-details h2{margin-top:0}
+.reservation-details h3{margin-top:16px;margin-bottom:10px;font-size:16px;color:#1f2f45}
+
+/* Detail sections */
+.detail-section{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(31,47,69,0.06)}
+.detail-section:last-of-type{border-bottom:none}
+.detail-section p{margin:8px 0}
+.detail-section strong{font-weight:700;color:#1f2f45}
+
+/* Badge styling */
+.badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;text-transform:uppercase}
+.badge-confirmed{background:#d4edda;color:#155724}
+.badge-canceled{background:#f8d7da;color:#721c24}
+.badge-checked_in{background:#cce5ff;color:#004085}
+.badge-unknown{background:#e2e3e5;color:#383d41}
+
+/* Waitlist table */
+.waitlist-table{width:100%;border-collapse:collapse;margin-top:10px}
+.waitlist-table thead{background:#f2f4f6;border-bottom:2px solid rgba(31,47,69,0.1)}
+.waitlist-table th{padding:10px;text-align:left;font-weight:700;color:#1f2f45;font-size:13px}
+.waitlist-table td{padding:10px;border-bottom:1px solid rgba(31,47,69,0.06);font-size:14px}
+.waitlist-table tbody tr:hover{background:#fafbfc}
+
+body.reservation-info .hero .inner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+body.reservation-info .hero img,
+body.reservation-info .card img{
+  display:block;
+  margin:0 auto;
+  max-width:100%;
+  height:auto;
+  float:none!important;
+}
+
+.actions{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.actions .btn{padding:10px 16px;border-radius:8px;border:1px solid rgba(31,47,69,0.06);background:#2b6f6b;color:#fff;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+.actions .btn:hover{background:#1f4d4a;text-decoration:none}
+.actions .btn-cancel{background:#c82333}
+.actions .btn-cancel:hover{background:#a01c28}
+.actions p{text-align:center;font-style:italic;color:#666}
+
+@media(max-width:760px){
+  .form-lookup .search-type{flex-direction:column;gap:8px}
+  .form-lookup .input-text{max-width:90vw}
+  .reservation-details{margin:12px;padding:12px}
+  .waitlist-table{font-size:12px}
+  .waitlist-table th,.waitlist-table td{padding:6px}
+}
